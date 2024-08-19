@@ -1,0 +1,33 @@
+version: '3'
+services:
+  superset:
+    image: apache/superset:latest
+    container_name: superset
+    environment:
+      - SUPERSET_DATABASE_URI=postgresql+psycopg2://superset:superset@postgres/superset
+      - REDIS_URL=redis://redis:6379/0
+      - SUPERSET_SECRET_KEY='s0arIiUA+kt+1ctoGSoYY4r7R+9p9lipzxXqE8nS+XG9Ph7yMBP2L2iJ'
+    ports:
+      - "8088:8088"
+    depends_on:
+      - postgres
+      - redis
+
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      POSTGRES_USER: superset
+      POSTGRES_PASSWORD: superset
+      POSTGRES_DB: superset
+    ports:
+      - "5432:5432"
+
+
