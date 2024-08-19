@@ -147,21 +147,20 @@ start_year = 2023
 start_quarter = 0
 
 
-fetch_financial_reports('HPG',1, 2024, 2, 1)
 
-# def fetch_all_data():
-#     all_symbol = get_all_symbol()
-#     logger.info("get list of symbol")
+def fetch_all_data():
+    all_symbol = get_all_symbol()
+    logger.info("get list of symbol")
 
-#     start_index = all_symbol.index("AAA")
+    start_index = all_symbol.index("AAA")
 
-#     for symbol in all_symbol[start_index:]:
-#         logger.warning(f'get Finance_report : {symbol}')
-#         for report_type in [1, 2, 3]:
-#             logger.info(f'get {REPORT_TYPE.get(report_type)} {symbol} ')
-#             fetch_financial_reports(
-#                 symbol, report_type, start_year, start_quarter, count
-#             )
-#         logger.warning(f'get Finance_report Done!: {symbol}')    
+    for symbol in all_symbol[start_index:]:
+        logger.warning(f'get Finance_report : {symbol}')
+        for report_type in [1, 2, 3]:
+            logger.info(f'get {REPORT_TYPE.get(report_type)} {symbol} ')
+            fetch_financial_reports(
+                symbol, report_type, start_year, start_quarter, count
+            )
+        logger.warning(f'get Finance_report Done!: {symbol}')    
 
-# fetch_all_data()
+fetch_all_data()
