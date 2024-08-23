@@ -7,7 +7,8 @@ import os
 import requests
 from loguru import logger
 from const import DISPLAY_NAME,REPORT_TYPE
-from copy import deepcopy
+
+logger.add("logs.log", rotation="1 week", retention="1 month", level="WARNING")
 
 
 def fetch_financial_reports(symbol, report_type, year, quarter, count):
@@ -37,6 +38,8 @@ def fetch_financial_reports(symbol, report_type, year, quarter, count):
 
 
 def _save_report(session, symbol, report_type, item, name, parent_id):
+    if item.get("Level")  > 1  and  parent_id is None:
+        logger.error(item.get("Name"), item.get("ParentID"))
     stmt = (
         insert(Report)
         .values(
@@ -45,12 +48,13 @@ def _save_report(session, symbol, report_type, item, name, parent_id):
             lever=item.get("Level"),
             parent_id=parent_id,
             name=name,
-            display_name=DISPLAY_NAME.get(name, name),
-        ).on_conflict_do_update(
-                index_elements=["name", "symbol_ticker"],
-                set_={"parent_id": parent_id},
-            )
-        # .on_conflict_do_nothing(index_elements=["name", "symbol_ticker"])
+            display_name=DISPLAY_NAME.get(name, name),)
+        # ).on_conflict_do_update(
+        #         index_elements=["name", "symbol_ticker"],
+        #         set_={"parent_id": parent_id,
+        #               "name" : item.get("Name")},
+        #     )
+        .on_conflict_do_nothing(index_elements=["name", "symbol_ticker"])
     )
 
     session.execute(stmt)
@@ -100,15 +104,12 @@ def update_data_and_get_child(data, item_id):
 def _get_children_item(item, data):
     item_id = item.get("ID")
     parent_name = item.get("Name")
-    # children_item = list(filter(lambda n: n.get("ParentID") == item_id, data))
     children_item = update_data_and_get_child(data,item_id)
-
-    data = list(filter(lambda n: n.get("ParentID") != item_id, data))
-    for child in children_item:
-        if child.get("Name") in ["- Nguyên giá", "- Giá trị hao mòn lũy kế"]:
-            child["Name"] = child["Name"] + " " + DISPLAY_NAME[parent_name].lower()
+    if len(children_item) != 0: 
+        for child in children_item:
+            if child.get("Name") in ["- Nguyên giá", "- Giá trị hao mòn lũy kế"]:
+                child["Name"] = child["Name"] + " " + "(" + DISPLAY_NAME.get(parent_name,parent_name).lower() + ")"
     return children_item
-
 
 def save_finance_report(session, data, symbol, report_type, parent_id=None,children_item = None):
     items = children_item if children_item is not None else data
@@ -142,9 +143,10 @@ def get_all_symbol():
     return all_symbol    
 
 
-count = 20
-start_year = 2023
-start_quarter = 0
+# count = 15 
+count = 60
+start_year = 2024
+start_quarter = 2
 
 
 
@@ -152,7 +154,7 @@ def fetch_all_data():
     all_symbol = get_all_symbol()
     logger.info("get list of symbol")
 
-    start_index = all_symbol.index("AAA")
+    start_index = all_symbol.index("ACV")
 
     for symbol in all_symbol[start_index:]:
         logger.warning(f'get Finance_report : {symbol}')
@@ -164,3 +166,4 @@ def fetch_all_data():
         logger.warning(f'get Finance_report Done!: {symbol}')    
 
 fetch_all_data()
+
