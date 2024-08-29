@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, Integer
 from sqlalchemy.orm import relationship
 from .base import CommonModel
 
@@ -10,4 +10,7 @@ class Symbol(CommonModel):
     company_name = Column(String)
     industry = Column(String)
     sector = Column(String)
+    short_industry = Column(String)
+    cap_ratio = Column(Integer)
     reports = relationship("Report", back_populates="symbol")
+    markets = relationship("Market", back_populates="symbol")
