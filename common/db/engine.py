@@ -10,7 +10,7 @@ load_dotenv(dotenv_path=env_path)
 
 
 def get_url():
-    user = os.getenv("USER")
+    user = os.getenv("USERDB")
     password = os.getenv("PASSWORD")
     server = os.getenv("SERVER")
     port = os.getenv("PORT")

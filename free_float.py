@@ -49,7 +49,7 @@ def mapping_data(raw_data):
 
 def save_2_db(session, symbol_info_dict):
     try:
-            stmt = select(Market).where(Market.date == '2024-08-28')
+            stmt = select(Market).where(Market.date == '2024-09-04')
             existing_items = session.execute(stmt).scalars().all()
             for item in existing_items:
                 item.shares_out_standing = symbol_info_dict.get(item.symbol_ticker).get("shares_out_standing", item.shares_out_standing)

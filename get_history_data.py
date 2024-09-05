@@ -9,9 +9,9 @@ import requests
 from loguru import logger
 from datetime import datetime
 
-from_date = "2024-07-01"
-to_date = "2024-08-28"
-logger.add("//log//get_history_data.log", rotation="1 week", retention="1 month", level="WARNING")
+from_date = "2024-09-04"
+to_date = "2024-09-04"
+logger.add("get_history_data.log", rotation="1 week", retention="1 month", level="WARNING")
 
 
 def get_all_symbol():
