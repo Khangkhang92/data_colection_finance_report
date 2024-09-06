@@ -7,30 +7,83 @@ from sqlalchemy.exc import SQLAlchemyError
 import os
 import requests
 from loguru import logger
-from datetime import datetime
+from datetime import datetime, date
+from sqlalchemy import func
+from models.market import Market
+import sys
 
-from_date = "2024-09-04"
-to_date = "2024-09-04"
-logger.add("get_history_data.log", rotation="1 week", retention="1 month", level="WARNING")
+# Create log directory if it doesn't exist
+log_dir = os.path.join(os.path.dirname(__file__), 'logs')
+os.makedirs(log_dir, exist_ok=True)
 
+# Set up logging
+log_file = os.path.join(log_dir, 'get_history_data.log')
+
+# Configure logger
+config = {
+    "handlers": [
+        {"sink": sys.stderr, "format": "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"},
+        {"sink": log_file, "rotation": "10 MB", "retention": "1 week", "compression": "zip", "format": "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}"},
+    ],
+}
+
+# Remove default logger and apply new configuration
+logger.configure(**config)
+
+def get_date_range():
+    with ScopedSession() as session:
+        # Get the latest date for each symbol
+        subquery = (
+            session.query(
+                Market.symbol_ticker,
+                func.max(Market.date).label('latest_date')
+            )
+            .group_by(Market.symbol_ticker)
+            .subquery()
+        )
+        
+        # Join with the Symbol table to get all symbols
+        latest_dates = (
+            session.query(Symbol.ticker, subquery.c.latest_date)
+            .outerjoin(subquery, Symbol.ticker == subquery.c.symbol_ticker)
+            .all()
+        )
+        
+        current_date = date.today()
+        return latest_dates, current_date
+
+# Update the from_date, to_date assignment
+latest_dates, to_date = get_date_range()
+to_date = to_date.strftime("%Y-%m-%d")
 
 def get_all_symbol():
     try:
         with ScopedSession() as session:
             stmt = select(Symbol.ticker)
-            all_symbol = session.execute(stmt).scalars().all()
-            for symbol in all_symbol:
-                raw_data = fetch_price(symbol)
-                save_2_db(Market,session,raw_data,symbol)
-                logger.warning(f"{symbol}")  
+            all_symbols = session.execute(stmt).scalars().all()
+            
+            # Batch processing
+            batch_size = 100
+            for i in range(0, len(all_symbols), batch_size):
+                batch = all_symbols[i:i+batch_size]
+                process_symbol_batch(batch, session)
+                
     except SQLAlchemyError as e:
         logger.error(f"An error occurred: {e}")
 
+def process_symbol_batch(symbols, session):
+    for symbol in symbols:
+        from_date = next((date for sym, date in latest_dates if sym == symbol), None)
+        from_date = from_date.strftime("%Y-%m-%d") if from_date else "2024-01-01"  # Default if no data
+        raw_data = fetch_price(symbol, from_date, to_date)
+        if raw_data:
+            save_2_db(Market, session, raw_data, symbol)
+        logger.warning(f"Processed {symbol}")
 
-def fetch_price(symbol):
+def fetch_price(symbol, from_date, to_date):
     load_dotenv()
     url = os.getenv("HISTORY_PRICE_URL")
-    url = url +f"/{symbol}/{from_date}/{to_date}"
+    url = url + f"/{symbol}/{from_date}/{to_date}"
     jwt_token = os.getenv("TOKEN")
     headers = {"JWTToken": f"{jwt_token}", "Content-Type": "application/json"}
 
@@ -51,92 +104,71 @@ def fetch_price(symbol):
 
 def save_2_db(model, session, values_to_insert, symbol):
     try:
+        # Define a mapping of API fields to database columns
+        field_mapping = {
+            "Date": "date",
+            "PriceHigh": "high",
+            "PriceLow": "low",
+            "PriceOpen": "open",
+            "PriceClose": "close",
+            "PriceAverage": "average",
+            "PricePreviousClose": "price_previous_close",
+            "PriceBasic": "price_basic",
+            "TotalVolume": "total_volume",
+            "DealVolume": "deal_volume",
+            "Volume": "volume",
+            "PutthroughVolume": "putthrough_volume",
+            "TotalTrade": "total_trade",
+            "TotalValue": "total_value",
+            "PutthroughValue": "putthrough_value",
+            "BuyForeignQuantity": "buy_foreign_quantity",
+            "BuyForeignValue": "buy_foreign_value",
+            "SellForeignQuantity": "sell_foreign_quantity",
+            "SellForeignValue": "sell_foreign_value",
+            "BuyCount": "buy_count",
+            "BuyQuantity": "buy_quantity",
+            "SellCount": "sell_count",
+            "SellQuantity": "sell_quantity",
+            "BuyAvg": "buy_avg",
+            "SellAvg": "sell_avg",
+            "AdjRatio": "adj_ratio",
+            "AdjClose": "adj_close",
+            "AdjOpen": "adj_open",
+            "AdjHigh": "adj_high",
+            "AdjLow": "adj_low",
+            "CurrentForeignRoom": "current_foreign_room",
+            "Shares": "shares",
+            "MarketCap": "market_cap",
+        }
+
+        # Prepare bulk insert data
+        bulk_insert_data = []
         for item in values_to_insert:
-            item_mapped = {
-                "date": datetime.strptime(item.get("Date"), "%Y-%m-%dT%H:%M:%SZ").date(),
-                "high": item.get("PriceHigh", None),
-                "low": item.get("PriceLow", None),
-                "open": item.get("PriceOpen", None),
-                "close": item.get("PriceClose", None),
-                "average": item.get("PriceAverage", None),
-                "price_previous_close": item.get("PricePreviousClose", None),
-                "price_basic": item.get("PriceBasic", None),
-                "total_volume": item.get("TotalVolume", None),
-                "deal_volume": item.get("DealVolume", None),
-                "volume": item.get("Volume", None),
-                "putthrough_volume": item.get("PutthroughVolume", None),
-                "total_trade": item.get("TotalTrade", None),
-                "total_value": item.get("TotalValue", None),
-                "putthrough_value": item.get("PutthroughValue", None),
-                "buy_foreign_quantity": item.get("BuyForeignQuantity", None),
-                "buy_foreign_value": item.get("BuyForeignValue", None),
-                "sell_foreign_quantity": item.get("SellForeignQuantity", None),
-                "sell_foreign_value": item.get("SellForeignValue", None),
-                "buy_count": item.get("BuyCount", None),
-                "buy_quantity": item.get("BuyQuantity", None),
-                "sell_count": item.get("SellCount", None),
-                "sell_quantity": item.get("SellQuantity", None),
-                "buy_avg": item.get("BuyAvg", None),
-                "sell_avg": item.get("SellAvg", None),
-                "adj_ratio": item.get("AdjRatio", None),
-                "adj_close": item.get("AdjClose", None),
-                "adj_open": item.get("AdjOpen", None),
-                "adj_high": item.get("AdjHigh", None),
-                "adj_low": item.get("AdjLow", None),
-                "current_foreign_room": item.get("CurrentForeignRoom", None),
-                "shares": item.get("Shares", None),
-                "market_cap": item.get("MarketCap", None),
-                "symbol_ticker": symbol,  
-            }
+            item_mapped = {db_col: item.get(api_field) for api_field, db_col in field_mapping.items()}
+            item_mapped["date"] = datetime.strptime(item["Date"], "%Y-%m-%dT%H:%M:%SZ").date()
+            item_mapped["symbol_ticker"] = symbol
+            bulk_insert_data.append(item_mapped)
 
-            stmt = insert(model).values(**item_mapped)
-            stmt = stmt.on_conflict_do_update(
-                index_elements=["symbol_ticker", "date"],
-                set_={
-                    "high": stmt.excluded.high,
-                    "low": stmt.excluded.low,
-                    "open": stmt.excluded.open,
-                    "close": stmt.excluded.close,
-                    "average": stmt.excluded.average,
-                    "price_previous_close": stmt.excluded.price_previous_close,
-                    "price_basic": stmt.excluded.price_basic,
-                    "total_volume": stmt.excluded.total_volume,
-                    "deal_volume": stmt.excluded.deal_volume,
-                    "volume": stmt.excluded.volume,
-                    "putthrough_volume": stmt.excluded.putthrough_volume,
-                    "total_trade": stmt.excluded.total_trade,
-                    "total_value": stmt.excluded.total_value,
-                    "putthrough_value": stmt.excluded.putthrough_value,
-                    "buy_foreign_quantity": stmt.excluded.buy_foreign_quantity,
-                    "buy_foreign_value": stmt.excluded.buy_foreign_value,
-                    "sell_foreign_quantity": stmt.excluded.sell_foreign_quantity,
-                    "sell_foreign_value": stmt.excluded.sell_foreign_value,
-                    "buy_count": stmt.excluded.buy_count,
-                    "buy_quantity": stmt.excluded.buy_quantity,
-                    "sell_count": stmt.excluded.sell_count,
-                    "sell_quantity": stmt.excluded.sell_quantity,
-                    "buy_avg": stmt.excluded.buy_avg,
-                    "sell_avg": stmt.excluded.sell_avg,
-                    "adj_ratio": stmt.excluded.adj_ratio,
-                    "adj_close": stmt.excluded.adj_close,
-                    "adj_open": stmt.excluded.adj_open,
-                    "adj_high": stmt.excluded.adj_high,
-                    "adj_low": stmt.excluded.adj_low,
-                    "current_foreign_room": stmt.excluded.current_foreign_room,
-                    "shares": stmt.excluded.shares,
-                    "market_cap": stmt.excluded.market_cap,
-                }
-            )
+        # Perform bulk upsert
+        stmt = insert(model).values(bulk_insert_data)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["symbol_ticker", "date"],
+            set_={col: stmt.excluded[col] for col in field_mapping.values()}
+        )
 
-            session.execute(stmt)
-            date = item.get("Date")
-            logger.info(f"{date} is store")
-        session.commit()  
+        result = session.execute(stmt)
         
+        # Check if the insert was successful
+        if result.rowcount > 0:
+            session.flush()  # Ensure all changes are sent to the database
+            session.commit()
+            logger.info(f"Data for symbol {symbol} stored successfully. Rows affected: {result.rowcount}")
+        else:
+            logger.warning(f"No rows were inserted or updated for symbol {symbol}")
 
     except Exception as e:
         logger.error(f"Error saving data to the database: {e}")
-        session.rollback()  # Rollback session on error
+        session.rollback()
 
-        
-get_all_symbol()
+if __name__ == "__main__":
+    get_all_symbol()

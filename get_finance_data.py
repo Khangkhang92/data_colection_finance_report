@@ -7,34 +7,33 @@ import os
 import requests
 from loguru import logger
 from const import DISPLAY_NAME,REPORT_TYPE
+import concurrent.futures
+from functools import lru_cache
 
 logger.add("logs.log", rotation="1 week", retention="1 month", level="WARNING")
 
 
-def fetch_financial_reports(symbol, report_type, year, quarter, count):
+@lru_cache(maxsize=None)
+def get_env_variables():
     load_dotenv()
-    url = os.getenv("FiNANCE_URL")
-    jwt_token = os.getenv("TOKEN")
+    return os.getenv("FINANCE_URL"), os.getenv("TOKEN")
 
+
+def fetch_financial_reports(symbol, report_type, year, quarter, count):
+    url, jwt_token = get_env_variables()
     full_url = f"{url}/{symbol}/{report_type}/{year}/{quarter}/{count}/vi-vn"
-
-    headers = {"JWTToken": f"{jwt_token}", "Content-Type": "application/json"}
+    headers = {"JWTToken": jwt_token, "Content-Type": "application/json"}
 
     try:
-        response = requests.get(full_url, headers=headers)
-        if response.status_code == 200:
-            data = response.json()
-            if data is not None:
-              save_2_db(data, symbol, report_type)
-            else:  
-               logger.error(f"Can not fetch {REPORT_TYPE.get(report_type)} {year}/{quarter} for {symbol}")  
+        response = requests.get(full_url, headers=headers, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        if data:
+            save_2_db(data, symbol, report_type)
         else:
-            logger.error(f"Error: Received response code {response.status_code}")
-            logger.error(response.text)
-            return None
-    except Exception as e:
-        logger.error(f"An error occurred: {e}")
-        return None
+            logger.warning(f"No data for {REPORT_TYPE.get(report_type)} {year}/{quarter} for {symbol}")
+    except requests.RequestException as e:
+        logger.error(f"Error fetching data for {symbol}: {e}")
 
 
 def _save_report(session, symbol, report_type, item, name, parent_id):
@@ -111,59 +110,110 @@ def _get_children_item(item, data):
                 child["Name"] = child["Name"] + " " + "(" + DISPLAY_NAME.get(parent_name,parent_name).lower() + ")"
     return children_item
 
-def save_finance_report(session, data, symbol, report_type, parent_id=None,children_item = None):
-    items = children_item if children_item is not None else data
-
+def save_finance_report(session, data, symbol, report_type, parent_id=None, children_item=None):
+    items = children_item or data
     for item in items:
-        report_id = _save_report(
-            session,
-            symbol,
-            report_type,
-            item,
-            item.get("Name", None),
-            parent_id=parent_id,
-        )
+        report_id = _save_report(session, symbol, report_type, item, item.get("Name"), parent_id)
         if item.get("Values"):
             _save_data_entries(session, report_id, item.get("Values", []))
         children_item = _get_children_item(item, data)
-   
-        save_finance_report(
-            session,data, symbol, report_type, parent_id=report_id,children_item = children_item
-        )
-
+        save_finance_report(session, data, symbol, report_type, parent_id=report_id, children_item=children_item)
 
 def save_2_db(data, symbol, report_type):
     with ScopedSession() as session:
         save_finance_report(session, data, symbol, report_type)
 
-def get_all_symbol():
+@lru_cache(maxsize=1)
+def get_all_symbols():
     with ScopedSession() as session:
-        stmt = select(Symbol.ticker)
-        all_symbol = session.execute(stmt).scalars().all()
-    return all_symbol    
+        return session.execute(select(Symbol.ticker)).scalars().all()
 
-
-# count = 15 
-count = 60
-start_year = 2024
-start_quarter = 2
-
-
+def fetch_symbol_data(symbol):
+    logger.warning(f'Fetching Finance_report: {symbol}')
+    for report_type in [1, 2, 3]:
+        logger.info(f'Fetching {REPORT_TYPE.get(report_type)} for {symbol}')
+        fetch_financial_reports(symbol, report_type, start_year, start_quarter, count)
+    logger.warning(f'Finished fetching Finance_report: {symbol}')
 
 def fetch_all_data():
-    all_symbol = get_all_symbol()
-    logger.info("get list of symbol")
+    all_symbols = get_all_symbols()
+    logger.info("Retrieved list of symbols")
 
-    start_index = all_symbol.index("ACV")
+    start_index = all_symbols.index("ACV")
+    symbols_to_fetch = all_symbols[start_index:]
 
-    for symbol in all_symbol[start_index:]:
-        logger.warning(f'get Finance_report : {symbol}')
-        for report_type in [1, 2, 3]:
-            logger.info(f'get {REPORT_TYPE.get(report_type)} {symbol} ')
-            fetch_financial_reports(
-                symbol, report_type, start_year, start_quarter, count
-            )
-        logger.warning(f'get Finance_report Done!: {symbol}')    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        executor.map(fetch_symbol_data, symbols_to_fetch)
 
-fetch_all_data()
+if __name__ == "__main__":
+    count = 60
+    start_year = 2024
+    start_quarter = 2
+    fetch_all_data()
 
+
+"""
+Logic Flow:
+                                +-------------------+
+                                |   fetch_all_data  |
+                                +-------------------+
+                                          |
+                                          v
+                            +-------------------------------+
+                            |        get_all_symbols        |
+                            | (cached list of all symbols)  |
+                            +-------------------------------+
+                                          |
+                                          v
+                            +-------------------------------+
+                            |    ThreadPoolExecutor.map     |
+                            | (concurrent execution)        |
+                            +-------------------------------+
+                                          |
+                                          v
+                            +-------------------------------+
+                            |      fetch_symbol_data        |
+                            | (for each symbol)             |
+                            +-------------------------------+
+                                          |
+                                          v
+                    +-----------------------------------------------+
+                    |            fetch_financial_reports            |
+                    | (for each report type: 1, 2, 3)               |
+                    +-----------------------------------------------+
+                                          |
+                                          v
+                    +-----------------------------------------------+
+                    |               API Request                     |
+                    | (get data from external financial service)    |
+                    +-----------------------------------------------+
+                                          |
+                                          v
+                                +-----------------+
+                                |    save_2_db    |
+                                +-----------------+
+                                          |
+                                          v
+                            +-------------------------------+
+                            |      save_finance_report      |
+                            | (recursive saving of data)    |
+                            +-------------------------------+
+                                          |
+                                          v
+                    +-----------------------------------------------+
+                    |               _save_report                    |
+                    | (save report info to database)                |
+                    +-----------------------------------------------+
+                                          |
+                                          v
+                    +-----------------------------------------------+
+                    |             _save_data_entries                |
+                    | (save associated data to database)            |
+                    +-----------------------------------------------+
+                                          |
+                                          v
+                    +-----------------------------------------------+
+                    |            _get_children_item                 |
+                    | (process child items for recursive saving)    |
+                    +-----------------------------------------------+
+"""
