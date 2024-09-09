@@ -111,6 +111,4 @@ DISPLAY_NAME = {
     "TỔNG CỘNG NGUỒN VỐN": "TỔNG CỘNG NGUỒN VỐN",
 }
 
-REPORT_TYPE = { 1 : "Balance_sheet",
-                2 : "Income_statement",
-                3 : "CashFlow"}
+REPORT_TYPE = {1: "Balance_sheet", 2: "Income_statement", 3: "CashFlow"}

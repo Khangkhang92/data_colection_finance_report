@@ -20,4 +20,3 @@ while index < len(data):
 
 print(data)
 print(result)
-              

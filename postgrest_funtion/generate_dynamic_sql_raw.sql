@@ -108,7 +108,7 @@ BEGIN
         'FROM finance_report fr ' ||
         'JOIN data d ON fr.id = d.report_id ' ||
         'WHERE fr.symbol_ticker = %L ' ||
-        'AND fr.type = 1 ' ||
+        -- 'AND fr.type = 1 ' ||
         'AND %s ' ||
         'AND fr.name = ANY(%L) ' ||
         'GROUP BY d.quarter, d.year ' ||
@@ -149,11 +149,14 @@ DECLARE
     view_name TEXT := 'dynamic_view';
     dynamic_sql TEXT;
 BEGIN
+    -- Drop the view if it exists
+    EXECUTE format('DROP VIEW IF EXISTS %I', view_name);
+
     -- Generate the dynamic SQL
     dynamic_sql := generate_dynamic_sql_raw(symbol, category_name, mode);
     
-    -- Create or replace the view
-    EXECUTE format('CREATE OR REPLACE VIEW %I AS %s', view_name, dynamic_sql);
+    -- Create the view
+    EXECUTE format('CREATE VIEW %I AS %s', view_name, dynamic_sql);
 END;
 $$ LANGUAGE plpgsql;
 

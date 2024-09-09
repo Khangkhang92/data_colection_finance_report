@@ -6,3 +6,4 @@ __pycache__/
 backup.sql
 *.dump
 logs/
+markets_data/

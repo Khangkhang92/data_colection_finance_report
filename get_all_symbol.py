@@ -6,6 +6,7 @@ from loguru import logger
 from models import Symbol
 from common.db import ScopedSession
 
+
 def fetch_allsymbol():
     load_dotenv()
     url = os.getenv("ALL_SYMBOL_URL")
@@ -20,6 +21,7 @@ def fetch_allsymbol():
     except requests.RequestException as e:
         logger.error(f"An error occurred: {e}")
 
+
 def mapping_exchange(raw_data):
     convert = {"HOSTC": "HSX", "HASTC": "HNX", "UPCOM": "UPCOM"}
     symbol_info_list = [
@@ -33,9 +35,10 @@ def mapping_exchange(raw_data):
         for data in raw_data
     ]
     logger.info("Get all symbols completed successfully")
-    
+
     with ScopedSession() as session:
         save_2_db(Symbol, session, symbol_info_list)
+
 
 def save_2_db(model, session, values_to_insert):
     stmt = insert(model).values(values_to_insert)
@@ -48,6 +51,7 @@ def save_2_db(model, session, values_to_insert):
     )
     session.execute(stmt)
     logger.info(f"Stored {len(values_to_insert)} symbols")
+
 
 if __name__ == "__main__":
     fetch_allsymbol()

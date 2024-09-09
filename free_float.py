@@ -7,6 +7,7 @@ import os
 import requests
 from loguru import logger
 
+
 def fetch_allsymbol():
     load_dotenv()
     url = os.getenv("LASTEST_FINANCIAL_INFO_URL")
@@ -21,35 +22,42 @@ def fetch_allsymbol():
     except requests.RequestException as e:
         logger.error(f"An error occurred while fetching data: {e}")
 
+
 def mapping_data(raw_data):
     symbol_info_dict = {
         data["Symbol"]: {
-            "date": datetime.fromisoformat(data.get("Date")).strftime('%Y-%m-%d') if data.get("Date") else None,
+            "date": (
+                datetime.fromisoformat(data.get("Date")).strftime("%Y-%m-%d")
+                if data.get("Date")
+                else None
+            ),
             "shares_out_standing": data.get("SharesOutstanding"),
             "market_capitalization": data.get("MarketCapitalization"),
             "free_shares": data.get("FreeShares"),
         }
         for data in raw_data
     }
-    
+
     logger.info("Get all symbol is ok!")
     with ScopedSession() as session:
         save_2_db(session, symbol_info_dict)
+
 
 def save_2_db(session, symbol_info_dict):
     try:
         for symbol, info in symbol_info_dict.items():
             stmt = (
                 update(Market)
-                .where(and_(
-                    Market.symbol_ticker == symbol,
-                    Market.date == info['date']
-                ))
-                .values({
-                    Market.shares_out_standing: info["shares_out_standing"],
-                    Market.market_capitalization: info["market_capitalization"],
-                    Market.free_shares: info["free_shares"],
-                })
+                .where(
+                    and_(Market.symbol_ticker == symbol, Market.date == info["date"])
+                )
+                .values(
+                    {
+                        Market.shares_out_standing: info["shares_out_standing"],
+                        Market.market_capitalization: info["market_capitalization"],
+                        Market.free_shares: info["free_shares"],
+                    }
+                )
             )
             result = session.execute(stmt)
         session.commit()
@@ -57,6 +65,7 @@ def save_2_db(session, symbol_info_dict):
     except Exception as e:
         session.rollback()
         logger.error(f"An error occurred while updating records: {e}")
+
 
 if __name__ == "__main__":
     fetch_allsymbol()
