@@ -17,16 +17,12 @@ data_folder = "markets_data"
 os.makedirs(data_folder, exist_ok=True)
 
 # Use a defaultdict to map methods to their respective files
-method_to_file = defaultdict(
-    lambda: "unknown.json",
-    {
-        "updateQuote": "updateQuote.json",
-        "updateMarket": "updateMarket.json",
-        "updateIntradayQuote": "updateIntradayQuote.json",
-        "updateIntradayMarketStatistic": "updateIntradayMarketStatistic.json",
-    },
-)
-
+method_to_file = {
+    "updateQuote": "updateQuote.json",
+    "updateMarket": "updateMarket.json",
+    "updateIntradayQuote": "updateIntradayQuote.json",
+    "updateIntradayMarketStatistic": "updateIntradayMarketStatistic.json",
+}
 
 async def receive_data_from_websocket(uri):
     async with websockets.connect(uri) as websocket:
@@ -39,11 +35,14 @@ async def process_message(message):
     data = json.loads(message)
     if "M" in data and data["M"]:
         method = data["M"][0]["M"]
-        filename = os.path.join(data_folder, method_to_file[method])
-        await append_to_json_file(filename, data)
-        logger.info(f"Processed message: {method}")
+        if method in method_to_file:
+            filename = os.path.join(data_folder, method_to_file[method])
+            await append_to_json_file(filename, data)
+            logger.info(f"Processed message: {method}")
+        else:
+            logger.info(f"Skipped unknown method: {method}")
     else:
-        logger.warning("Received message with unexpected format")
+        logger.info("Skipped message with no method")
 
 
 async def append_to_json_file(filename, new_data):
