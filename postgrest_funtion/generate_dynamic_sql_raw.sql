@@ -108,7 +108,6 @@ BEGIN
         'FROM finance_report fr ' ||
         'JOIN data d ON fr.id = d.report_id ' ||
         'WHERE fr.symbol_ticker = %L ' ||
-        -- 'AND fr.type = 1 ' ||
         'AND %s ' ||
         'AND fr.name = ANY(%L) ' ||
         'GROUP BY d.quarter, d.year ' ||
