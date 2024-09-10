@@ -12,6 +12,10 @@ class Symbol(CommonModel):
     sector = Column(String)
     short_industry = Column(String)
     cap_ratio = Column(Integer)
+
     reports = relationship("Report", back_populates="symbol")
     markets = relationship("Market", back_populates="symbol")
-    update_quote = relationship("UpdateQuote", back_populates="symbol", uselist=False) #one to one
+    update_quote = relationship(
+        "UpdateQuote", back_populates="symbol", uselist=False
+    )  # one to one
+    major_holder = relationship("MajorHolder", back_populates="symbol")

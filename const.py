@@ -140,12 +140,26 @@ UPDATE_QUOTE_MAPPING = {
     "PriceAsk3": "price_ask3",
     "QuantityAsk3": "quantity_ask3",
     "BuyForeignQuantity": "buy_foreign_quantity",
-    "SellForeignQuantity": "sell_foreign_value", 
+    "SellForeignQuantity": "sell_foreign_value",
     "BuyForeignValue": "buy_foreign_value",
     "SellForeignValue": "sell_foreign_value",
     "CurrentForeignRoom": "current_foreign_room",
     "TotalActiveBuyVolume": "total_active_buy_volume",
     "TotalActiveSellVolume": "total_active_sell_volume",
     "PricePercentChange": "price_percent_change",
-    "PriceChange": "price_change"
+    "PriceChange": "price_change",
+}
+
+MAJOR_HOLDER_MAPPING = {
+    "Symbol": "symbol_ticker",
+    "Name": "name",
+    "Position": "position",
+    "Shares": "shares",
+    "Ownership": "ownership",
+    "IsOrganization": "is_organization",
+    "IsForeigner": "is_foreigner",
+    "IsFoundation": "is_foundation",
+    "IsListing": "is_listing",
+    "ListingSymbol": "listing_symbol",
+    "Reported": "reported",
 }

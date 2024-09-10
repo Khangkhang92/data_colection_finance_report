@@ -3,8 +3,9 @@ from sqlalchemy.ext.declarative import declarative_base
 
 from .base import CommonModel
 
+
 class IntradayMarketStatistic(CommonModel):
-    __tablename__ = 'intraday_market_statistics'
+    __tablename__ = "intraday_market_statistics"
 
     id = Column(Integer, primary_key=True)
     exchange = Column(String, nullable=False)

@@ -6,7 +6,7 @@ from sqlalchemy import (
     ForeignKey,
     UniqueConstraint,
     DateTime,
-    Date
+    Date,
 )
 from sqlalchemy.orm import relationship, mapped_column
 from .base import CommonModel
@@ -54,7 +54,6 @@ class UpdateQuote(CommonModel):
     total_active_sell_volume = Column(Float)
     price_percent_change = Column(Float)
     price_change = Column(Float)
-
 
     symbol = relationship("Symbol", back_populates="update_quote")
 
