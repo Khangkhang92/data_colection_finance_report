@@ -14,4 +14,4 @@ class Symbol(CommonModel):
     cap_ratio = Column(Integer)
     reports = relationship("Report", back_populates="symbol")
     markets = relationship("Market", back_populates="symbol")
-    update_quotes = relationship("UpdateQuote", back_populates="symbol")
+    update_quote = relationship("UpdateQuote", back_populates="symbol", uselist=False) #one to one

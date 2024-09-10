@@ -112,3 +112,40 @@ DISPLAY_NAME = {
 }
 
 REPORT_TYPE = {1: "Balance_sheet", 2: "Income_statement", 3: "CashFlow"}
+
+
+UPDATE_QUOTE_MAPPING = {
+    "Date": "date",
+    "Symbol": "symbol_ticker",
+    "PriceCurrent": "price_current",
+    "PriceLast": "price_last",
+    "PriceHigh": "price_high",
+    "PriceLow": "price_low",
+    "PriceOpen": "price_open",
+    "PriceClose": "price_close",
+    "PriceAverage": "price_average",
+    "TotalVolume": "total_volume",
+    "Volume": "volume",
+    "TotalValue": "total_value",
+    "PriceBid1": "price_bid1",
+    "QuantityBid1": "quantity_bid1",
+    "PriceBid2": "price_bid2",
+    "QuantityBid2": "quantity_bid2",
+    "PriceBid3": "price_bid3",
+    "QuantityBid3": "quantity_bid3",
+    "PriceAsk1": "price_ask1",
+    "QuantityAsk1": "quantity_ask1",
+    "PriceAsk2": "price_ask2",
+    "QuantityAsk2": "quantity_ask2",
+    "PriceAsk3": "price_ask3",
+    "QuantityAsk3": "quantity_ask3",
+    "BuyForeignQuantity": "buy_foreign_quantity",
+    "SellForeignQuantity": "sell_foreign_value", 
+    "BuyForeignValue": "buy_foreign_value",
+    "SellForeignValue": "sell_foreign_value",
+    "CurrentForeignRoom": "current_foreign_room",
+    "TotalActiveBuyVolume": "total_active_buy_volume",
+    "TotalActiveSellVolume": "total_active_sell_volume",
+    "PricePercentChange": "price_percent_change",
+    "PriceChange": "price_change"
+}

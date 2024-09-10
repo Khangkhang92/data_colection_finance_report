@@ -6,11 +6,12 @@ from sqlalchemy import (
     ForeignKey,
     UniqueConstraint,
     DateTime,
+    Date
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, mapped_column
 from .base import CommonModel
 from sqlalchemy.ext.hybrid import hybrid_property
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import pytz
 
 
@@ -18,20 +19,7 @@ class UpdateQuote(CommonModel):
     __tablename__ = "update_quote"
 
     id = Column(Integer, primary_key=True)
-    _date = Column('date', DateTime, nullable=False)
-
-    @hybrid_property
-    def date(self):
-        return self._date.replace(tzinfo=pytz.UTC).astimezone(pytz.FixedOffset(420))
-
-    @date.setter
-    def date(self, value):
-        if isinstance(value, str):
-            value = datetime.fromisoformat(value.replace('Z', '+00:00'))
-        if value.tzinfo is None:
-            value = pytz.UTC.localize(value)
-        self._date = value.astimezone(pytz.UTC)
-
+    date = mapped_column(Date, nullable=False)
 
     symbol_ticker = Column(
         String(length=15), ForeignKey("symbol.ticker"), nullable=False
