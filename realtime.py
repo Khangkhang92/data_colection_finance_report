@@ -34,6 +34,16 @@ FULLURL = f"{SOCKET}&connectionToken={CONNECTION_TOKEN}&Token={TOKEN}"
 engine = create_async_engine(get_url())
 AsyncSessionFactory = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
+def is_trading_time():
+    now = datetime.datetime.now()
+    if now.weekday() >= 5:  # Saturday or Sunday
+        return False
+    
+    if (9 <= now.hour < 11) or (now.hour == 11 and now.minute <= 30) or (13 <= now.hour < 15):
+        return True
+    
+    return False
+
 async def process_update_quote(quote_data_list, session):
     for quote_data in quote_data_list[0]:
         symbol = await session.execute(select(Symbol).filter_by(ticker=quote_data["Symbol"]))
@@ -59,8 +69,6 @@ async def process_update_quote(quote_data_list, session):
         for key, value in filtered_data.items():
             setattr(update_quote, key, value)
         
-        # Use date.today() instead of datetime.utcnow()
-        update_quote.last_updated = datetime.date.today()
         print(update_quote.__dict__)
         await session.flush()
 
@@ -82,12 +90,16 @@ async def process_message(message, session):
 
 async def receive_data_from_websocket():
     async with websockets.connect(FULLURL) as websocket:
-        while True:
+        while is_trading_time():
             message = await websocket.recv()
             async with AsyncSessionFactory() as session:
                 async with session.begin():
                     await process_message(message, session)
-            # Session is automatically committed here
+        
+        logger.info("Outside trading hours. Stopping script.")
 
 if __name__ == "__main__":
-    asyncio.run(receive_data_from_websocket())
+    if is_trading_time():
+        asyncio.run(receive_data_from_websocket())
+    else:
+        logger.info("Not within trading hours. Script will not run.")
