@@ -20,4 +20,5 @@ class Symbol(CommonModel):
     )  # one to one
     major_holder = relationship("MajorHolder", back_populates="symbol")
 
-    daily_market = relationship("DailyMarket", back_populates="symbol")
+    daily_markets = relationship("DailyMarket", back_populates="symbol")
+    history_data_processings = relationship("HistoryDataProcessing", back_populates="symbol")
