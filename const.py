@@ -140,7 +140,7 @@ UPDATE_QUOTE_MAPPING = {
     "PriceAsk3": "price_ask3",
     "QuantityAsk3": "quantity_ask3",
     "BuyForeignQuantity": "buy_foreign_quantity",
-    "SellForeignQuantity": "sell_foreign_value",
+    "SellForeignQuantity": "sell_foreign_quantity",
     "BuyForeignValue": "buy_foreign_value",
     "SellForeignValue": "sell_foreign_value",
     "CurrentForeignRoom": "current_foreign_room",

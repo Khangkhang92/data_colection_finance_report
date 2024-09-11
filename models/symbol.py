@@ -19,3 +19,5 @@ class Symbol(CommonModel):
         "UpdateQuote", back_populates="symbol", uselist=False
     )  # one to one
     major_holder = relationship("MajorHolder", back_populates="symbol")
+
+    daily_market = relationship("DailyMarket", back_populates="symbol")

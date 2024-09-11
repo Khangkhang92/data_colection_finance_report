@@ -47,6 +47,7 @@ class UpdateQuote(CommonModel):
     buy_foreign_value = Column(Float)
     sell_foreign_value = Column(Float)
     buy_foreign_quantity = Column(Float)
+    sell_foreign_value = Column(Float)
     current_foreign_room = Column(Float)
     total_active_buy_volume = Column(Float)
     total_active_sell_volume = Column(Float)
