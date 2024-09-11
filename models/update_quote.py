@@ -4,22 +4,20 @@ from sqlalchemy import (
     Integer,
     Float,
     ForeignKey,
-    UniqueConstraint,
     DateTime,
     Date,
+    UniqueConstraint
 )
 from sqlalchemy.orm import relationship, mapped_column
 from .base import CommonModel
-from sqlalchemy.ext.hybrid import hybrid_property
-from datetime import datetime, timedelta, date
-import pytz
 
 
 class UpdateQuote(CommonModel):
     __tablename__ = "update_quote"
 
     id = Column(Integer, primary_key=True)
-    date = mapped_column(Date, nullable=False)
+    date = Column(Date)
+    datetime = Column(DateTime(timezone=True))
 
     symbol_ticker = Column(
         String(length=15), ForeignKey("symbol.ticker"), nullable=False
@@ -59,3 +57,8 @@ class UpdateQuote(CommonModel):
 
     def __repr__(self):
         return f"<UpdateQuote(symbol='{self.symbol}', date='{self.date}')>"
+    
+
+#     __table_args__ = (
+#        UniqueConstraint('symbol_ticker', 'date', name='uq_update_quote_symbol_date'),
+#    )

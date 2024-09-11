@@ -4,39 +4,19 @@ import websockets
 import json
 from loguru import logger
 from dotenv import load_dotenv
-from models import Symbol, UpdateQuote
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine, select, update
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+import httpx
 import datetime
-from const import UPDATE_QUOTE_MAPPING
 
 load_dotenv()
-
-
-def get_url():
-    user = os.getenv("USERDB")
-    password = os.getenv("PASSWORD")
-    server = os.getenv("SERVER")
-    port = os.getenv("PORT")
-    db = os.getenv("DB")
-    db_url = f"postgresql+asyncpg://{user}:{password}@{server}:{port}/{db}"
-    print(db_url)
-    return db_url
-
 
 # Constants
 SOCKET = os.getenv("SOCKET")
 CONNECTION_TOKEN = os.getenv("CONNECTION_TOKEN")
 TOKEN = os.getenv("TOKEN")
 FULLURL = f"{SOCKET}&connectionToken={CONNECTION_TOKEN}&Token={TOKEN}"
+POSTGREST_URL = os.getenv("POSTGREST_URL")
 
-# Create a global async session factory
-engine = create_async_engine(get_url())
-AsyncSessionFactory = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
-
-
-def is_trading_time():
+async def is_trading_time():
     now = datetime.datetime.now()
     if now.weekday() >= 5:  # Saturday or Sunday
         return False
@@ -50,78 +30,50 @@ def is_trading_time():
 
     return False
 
+async def process_update_quote(quote_data_list):
+    async with httpx.AsyncClient() as client:
+        for quote_data in quote_data_list[0]:
+            # Convert the Date string to datetime object
+            date_str = quote_data.get('Date')
+            if date_str:
+                date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f%z")
+                quote_data['Date'] = date_obj.isoformat()
 
-async def process_update_quote(quote_data_list, session):
-    for quote_data in quote_data_list[0]:
-        symbol = await session.execute(
-            select(Symbol).filter_by(ticker=quote_data["Symbol"])
-        )
-        symbol = symbol.scalar_one_or_none()
+            # Call the PostgreSQL function via PostgREST
+            response = await client.post(f"{POSTGREST_URL}/rpc/save_update_quote", json=quote_data)
+            
+            if response.status_code != 200:
+                logger.error(f"Error saving data for symbol {quote_data['Symbol']}: {response.text}")
+            else:
+                logger.info(f"Data saved for symbol {quote_data['Symbol']}")
 
-        if symbol is None:
-            logger.warning(f"Symbol not found: {quote_data['Symbol']}")
-            continue
-
-        update_quote = await session.execute(
-            select(UpdateQuote).filter_by(symbol_ticker=symbol.ticker)
-        )
-        update_quote = update_quote.scalar_one_or_none()
-
-        if update_quote is None:
-            update_quote = UpdateQuote(symbol_ticker=symbol.ticker)
-            session.add(update_quote)
-
-        filtered_data = {
-            UPDATE_QUOTE_MAPPING.get(k, k): v
-            for k, v in quote_data.items()
-            if UPDATE_QUOTE_MAPPING.get(k, k) in UpdateQuote.__table__.columns
-        }
-
-        # Convert date string to date object
-        if "date" in filtered_data and filtered_data["date"] is not None:
-            filtered_data["date"] = datetime.datetime.fromisoformat(
-                filtered_data["date"].replace("Z", "+00:00")
-            ).date()
-
-        for key, value in filtered_data.items():
-            setattr(update_quote, key, value)
-
-        print(update_quote.__dict__)
-        await session.flush()
-
-
-async def process_message(message, session):
+async def process_message(message):
     data = json.loads(message)
     if "M" in data and data["M"]:
         method = data["M"][0]["M"]
         if method == "updateQuote":
-            await process_update_quote(
-                data["M"][0]["A"], session
-            )  # Pass the entire list
+            await process_update_quote(data["M"][0]["A"])
         else:
             logger.info(f"Skipped unknown method: {method}")
-    elif "C" in data and "S" in data and "M" in data and not data["M"]:
-        # Skip connection update messages
-        return
-    elif "C" in data:
-        logger.info(f"Received connection message: {data['C']}")
     else:
-        logger.info(f"Skipped message: {data}")
-
+        logger.info("Received message without 'M' key or empty 'M' list")
 
 async def receive_data_from_websocket():
-    async with websockets.connect(FULLURL) as websocket:
-        while is_trading_time():
-            message = await websocket.recv()
-            async with AsyncSessionFactory() as session:
-                async with session.begin():
-                    await process_message(message, session)
-
-        logger.info("Outside trading hours. Stopping script.")
-
+    while True:
+        try:
+            async with websockets.connect(FULLURL) as websocket:
+                logger.info("Connected to WebSocket")
+                while await is_trading_time():
+                    message = await websocket.recv()
+                    await process_message(message)
+                logger.info("Outside trading hours. Disconnecting.")
+        except websockets.exceptions.ConnectionClosed:
+            logger.warning("WebSocket connection closed. Reconnecting...")
+            await asyncio.sleep(5)
+        except Exception as e:
+            logger.error(f"An error occurred: {str(e)}")
+            await asyncio.sleep(5)
 
 if __name__ == "__main__":
-    if is_trading_time():
-        asyncio.run(receive_data_from_websocket())
-    else:
-        logger.info("Not within trading hours. Script will not run.")
+    logger.info("Starting WebSocket client")
+    asyncio.run(receive_data_from_websocket())
