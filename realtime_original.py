@@ -12,9 +12,17 @@ import datetime
 from const import UPDATE_QUOTE_MAPPING
 import colorama
 from colorama import Fore, Style
+from pathlib import Path 
 
 # Add this near the top of the file, after other imports
 colorama.init(autoreset=True)
+
+# Create logs directory if it doesn't exist
+logs_dir = Path("logs")
+logs_dir.mkdir(exist_ok=True)
+
+# Configure logger to write to file
+logger.add(logs_dir / "realtime_error.log", rotation="1 day", retention="7 days", level="ERROR")
 
 load_dotenv()
 
@@ -115,14 +123,35 @@ async def process_message(message, session):
 
 
 async def receive_data_from_websocket():
-    async with websockets.connect(FULLURL) as websocket:
-        while is_trading_time():
-            message = await websocket.recv()
-            async with AsyncSessionFactory() as session:
-                async with session.begin():
-                    await process_message(message, session)
-
-        logger.info("Outside trading hours. Stopping script.")
+    while True:  # Outer loop for reconnection
+        try:
+            async with websockets.connect(FULLURL) as websocket:
+                logger.info(f"{Fore.GREEN}Connected to websocket{Style.RESET_ALL}")
+                while is_trading_time():
+                    try:
+                        message = await asyncio.wait_for(websocket.recv(), timeout=30)  # 30-second timeout
+                        async with AsyncSessionFactory() as session:
+                            async with session.begin():
+                                await process_message(message, session)
+                    except asyncio.TimeoutError:
+                        logger.warning(f"{Fore.YELLOW}No data received for 30 seconds. Checking connection...{Style.RESET_ALL}")
+                        try:
+                            pong = await websocket.ping()
+                            await asyncio.wait_for(pong, timeout=10)
+                            logger.info(f"{Fore.GREEN}Connection is still alive{Style.RESET_ALL}")
+                        except:
+                            logger.error(f"{Fore.RED}Ping failed. Reconnecting...{Style.RESET_ALL}")
+                            break  # Exit inner loop to reconnect
+                
+                logger.info(f"{Fore.YELLOW}Outside trading hours. Stopping script.{Style.RESET_ALL}")
+                return  # Exit the function when outside trading hours
+        
+        except websockets.exceptions.ConnectionClosed:
+            logger.error(f"{Fore.RED}WebSocket connection closed. Attempting to reconnect...{Style.RESET_ALL}")
+        except Exception as e:
+            logger.error(f"{Fore.RED}An error occurred: {e}. Attempting to reconnect...{Style.RESET_ALL}")
+        
+        await asyncio.sleep(5)  # Wait for 5 seconds before attempting to reconnect
 
 
 if __name__ == "__main__":
