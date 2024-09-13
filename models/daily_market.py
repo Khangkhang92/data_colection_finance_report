@@ -33,7 +33,7 @@ class DailyMarket(CommonModel):
     date = Column(Date)
     
  
-    symbol = relationship("Symbol", back_populates="daily_market")
+    symbol = relationship("Symbol", back_populates="daily_markets")
 
     def __repr__(self):
         return f"<UpdateQuote(symbol='{self.symbol}', date='{self.date}')>"

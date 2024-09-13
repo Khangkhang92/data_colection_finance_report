@@ -54,10 +54,25 @@ def is_trading_time():
     if now.weekday() >= 5:  # Saturday or Sunday
         return False
 
+    def parse_time(env_var, default):
+        time_str = os.getenv(env_var, default)
+        hour, minute = map(int, time_str.split(':'))
+        return hour, minute
+
+    morning_start = parse_time('MORNING_START', '9:00')
+    morning_end = parse_time('MORNING_END', '11:30')
+    afternoon_start = parse_time('AFTERNOON_START', '13:00')
+    afternoon_end = parse_time('AFTERNOON_END', '15:00')
+
+    current_time = now.hour * 60 + now.minute
+    morning_start_minutes = morning_start[0] * 60 + morning_start[1]
+    morning_end_minutes = morning_end[0] * 60 + morning_end[1]
+    afternoon_start_minutes = afternoon_start[0] * 60 + afternoon_start[1]
+    afternoon_end_minutes = afternoon_end[0] * 60 + afternoon_end[1]
+
     if (
-        (9 <= now.hour < 11)
-        or (now.hour == 11 and now.minute <= 30)
-        or (13 <= now.hour < 15)
+        (morning_start_minutes <= current_time < morning_end_minutes) or
+        (afternoon_start_minutes <= current_time < afternoon_end_minutes)
     ):
         return True
 

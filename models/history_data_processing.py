@@ -41,7 +41,7 @@ class HistoryDataProcessing(CommonModel):
     date = Column(Date)
     
  
-    symbol = relationship("Symbol", back_populates="history_data_processing")
+    symbol = relationship("Symbol", back_populates="history_data_processings")
 
     def __repr__(self):
         return f"<UpdateQuote(symbol='{self.symbol}', date='{self.date}')>"

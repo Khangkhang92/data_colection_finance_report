@@ -29,7 +29,7 @@ class MajorHolder(CommonModel):
     listing_symbol = Column(String(10))
     reported = Column(Date)
 
-    symbol = relationship("Symbol", back_populates="major_holder")
+    symbol = relationship("Symbol", back_populates="major_holders")
 
     def __repr__(self):
         return f"<MajorHolder(symbol='{self.symbol}', name='{self.name}')>"

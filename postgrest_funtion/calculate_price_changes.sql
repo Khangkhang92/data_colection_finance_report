@@ -1,3 +1,6 @@
+--https://www.timescale.com/learn/postgresql-window-functions
+
+
 CREATE OR REPLACE FUNCTION calculate_price_changes(p_symbol_ticker TEXT)
 RETURNS TABLE (
     output_date DATE,
