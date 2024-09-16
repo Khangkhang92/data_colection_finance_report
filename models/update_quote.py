@@ -6,7 +6,7 @@ from sqlalchemy import (
     ForeignKey,
     DateTime,
     Date,
-    UniqueConstraint
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship, mapped_column
 from .base import CommonModel
@@ -16,7 +16,7 @@ class UpdateQuote(CommonModel):
     __tablename__ = "update_quote"
 
     id = Column(Integer, primary_key=True)
-    
+
     symbol_ticker = Column(
         String(length=15), ForeignKey("symbol.ticker"), nullable=False
     )
@@ -53,13 +53,12 @@ class UpdateQuote(CommonModel):
     price_ask3 = Column(Float)
     quantity_ask3 = Column(Float)
     datetime = Column(DateTime(timezone=True))
-    
 
     symbol = relationship("Symbol", back_populates="update_quote")
 
     def __repr__(self):
         return f"<UpdateQuote(symbol='{self.symbol}', date='{self.date}')>"
-    
+
 
 #     __table_args__ = (
 #        UniqueConstraint('symbol_ticker', 'date', name='uq_update_quote_symbol_date'),

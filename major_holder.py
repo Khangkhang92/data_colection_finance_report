@@ -45,9 +45,9 @@ def mapping_data(raw_data):
         mapped_item = {}
         for key, value in MAJOR_HOLDER_MAPPING.items():
             if key in item:
-                if value == 'date':
+                if value == "date":
                     # Convert datetime string to date object
-                    mapped_item[value] = datetime.strptime(item[key], '%Y-%m-%d').date()
+                    mapped_item[value] = datetime.strptime(item[key], "%Y-%m-%d").date()
                 else:
                     mapped_item[value] = item[key]
         if mapped_item:
@@ -58,7 +58,7 @@ def mapping_data(raw_data):
 def clean_major_holders():
     with ScopedSession() as session:
         inspector = inspect(session.bind)
-        if 'major_holder' in inspector.get_table_names():
+        if "major_holder" in inspector.get_table_names():
             # Check if there's any data in the table
             count = session.query(func.count(MajorHolder.id)).scalar()
             if count > 0:
@@ -68,15 +68,21 @@ def clean_major_holders():
                 logger.warning(
                     f"MajorHolder table has been truncated. {count} rows were deleted."
                 )
-                
+
                 # Vacuum the major_holder table outside the transaction
-                session.execute(text("COMMIT"))  # Ensure any open transaction is committed
+                session.execute(
+                    text("COMMIT")
+                )  # Ensure any open transaction is committed
                 session.execute(text("VACUUM major_holder"))
                 logger.info("MajorHolder table has been vacuumed.")
             else:
-                logger.warning("MajorHolder table is empty. No truncation or vacuum needed.")
+                logger.warning(
+                    "MajorHolder table is empty. No truncation or vacuum needed."
+                )
         else:
-            logger.warning("MajorHolder table does not exist. Skipping truncation and vacuum.")
+            logger.warning(
+                "MajorHolder table does not exist. Skipping truncation and vacuum."
+            )
 
 
 def fetch_major_holder():

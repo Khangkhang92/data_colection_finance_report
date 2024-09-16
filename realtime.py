@@ -16,6 +16,7 @@ TOKEN = os.getenv("TOKEN")
 FULLURL = f"{SOCKET}&connectionToken={CONNECTION_TOKEN}&Token={TOKEN}"
 POSTGREST_URL = os.getenv("POSTGREST_URL")
 
+
 async def is_trading_time():
     now = datetime.datetime.now()
     if now.weekday() >= 5:  # Saturday or Sunday
@@ -30,22 +31,30 @@ async def is_trading_time():
 
     return False
 
+
 async def process_update_quote(quote_data_list):
     async with httpx.AsyncClient() as client:
         for quote_data in quote_data_list[0]:
             # Convert the Date string to datetime object
-            date_str = quote_data.get('Date')
+            date_str = quote_data.get("Date")
             if date_str:
-                date_obj = datetime.datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f%z")
-                quote_data['Date'] = date_obj.isoformat()
+                date_obj = datetime.datetime.strptime(
+                    date_str, "%Y-%m-%dT%H:%M:%S.%f%z"
+                )
+                quote_data["Date"] = date_obj.isoformat()
 
             # Call the PostgreSQL function via PostgREST
-            response = await client.post(f"{POSTGREST_URL}/rpc/save_update_quote", json=quote_data)
-            
+            response = await client.post(
+                f"{POSTGREST_URL}/rpc/save_update_quote", json=quote_data
+            )
+
             if response.status_code != 200:
-                logger.error(f"Error saving data for symbol {quote_data['Symbol']}: {response.text}")
+                logger.error(
+                    f"Error saving data for symbol {quote_data['Symbol']}: {response.text}"
+                )
             else:
                 logger.info(f"Data saved for symbol {quote_data['Symbol']}")
+
 
 async def process_message(message):
     data = json.loads(message)
@@ -57,6 +66,7 @@ async def process_message(message):
             logger.info(f"Skipped unknown method: {method}")
     else:
         logger.info("Received message without 'M' key or empty 'M' list")
+
 
 async def receive_data_from_websocket():
     while True:
@@ -73,6 +83,7 @@ async def receive_data_from_websocket():
         except Exception as e:
             logger.error(f"An error occurred: {str(e)}")
             await asyncio.sleep(5)
+
 
 if __name__ == "__main__":
     logger.info("Starting WebSocket client")
