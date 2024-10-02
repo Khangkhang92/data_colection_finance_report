@@ -13,21 +13,96 @@ from const import UPDATE_QUOTE_MAPPING
 import colorama
 from colorama import Fore, Style
 from pathlib import Path
+from functools import lru_cache  
+import redis  
 
-# Add this near the top of the file, after other imports
+redis_client = redis.Redis.from_url("redis://localhost:6379/0")
 colorama.init(autoreset=True)
 
-# Create logs directory if it doesn't exist
+
 logs_dir = Path("logs")
 logs_dir.mkdir(exist_ok=True)
 
-# Configure logger to write to file
 logger.add(
     logs_dir / "realtime_error.log", rotation="1 day", retention="7 days", level="ERROR"
 )
 
 load_dotenv()
 
+
+class UpdateQuoteData:
+    def __init__(
+        self,
+        symbol_ticker=None,
+        price_current=None,
+        price_last=None,
+        price_high=None,
+        price_low=None,
+        price_open=None,
+        price_close=None,
+        price_average=None,
+        price_change=None,
+        price_percent_change=None,
+        volume=None,
+        total_active_buy_volume=None,
+        total_active_sell_volume=None,
+        buy_foreign_quantity=None,
+        buy_foreign_value=None,
+        sell_foreign_quantity=None,
+        sell_foreign_value=None,
+        current_foreign_room=None,
+        total_volume=None,
+        total_value=None,
+        date=None,
+        price_bid1=None,
+        quantity_bid1=None,
+        price_bid2=None,
+        quantity_bid2=None,
+        price_bid3=None,
+        quantity_bid3=None,
+        price_ask1=None,
+        quantity_ask1=None,
+        price_ask2=None,
+        quantity_ask2=None,
+        price_ask3=None,
+        quantity_ask3=None,
+        datetime=None,
+    ):  
+        self.symbol_ticker = symbol_ticker
+        self.price_current = price_current
+        self.price_last = price_last
+        self.price_high = price_high
+        self.price_low = price_low
+        self.price_open = price_open
+        self.price_close = price_close
+        self.price_average = price_average
+        self.price_change = price_change
+        self.price_percent_change = price_percent_change
+        self.volume = volume
+        self.total_active_buy_volume = total_active_buy_volume
+        self.total_active_sell_volume = total_active_sell_volume
+        self.buy_foreign_quantity = buy_foreign_quantity
+        self.buy_foreign_value = buy_foreign_value
+        self.sell_foreign_quantity = sell_foreign_quantity
+        self.sell_foreign_value = sell_foreign_value
+        self.current_foreign_room = current_foreign_room
+        self.total_volume = total_volume
+        self.total_value = total_value
+        self.price_bid1 = price_bid1
+        self.quantity_bid1 = quantity_bid1
+        self.price_bid2 = price_bid2
+        self.quantity_bid2 = quantity_bid2
+        self.price_bid3 = price_bid3
+        self.quantity_bid3 = quantity_bid3
+        self.price_ask1 = price_ask1
+        self.quantity_ask1 = quantity_ask1
+        self.price_ask2 = price_ask2
+        self.quantity_ask2 = quantity_ask2
+        self.price_ask3 = price_ask3
+        self.quantity_ask3 = quantity_ask3
+        self.date = date
+        self.datetime = datetime
+        
 
 def get_url():
     user = os.getenv("USERDB")
@@ -80,48 +155,50 @@ def is_trading_time():
     return False
 
 
-async def process_update_quote(quote_data_list, session):
-    for quote_data in quote_data_list[0]:
-        symbol = await session.execute(
-            select(Symbol).filter_by(ticker=quote_data["Symbol"])
-        )
-        symbol = symbol.scalar_one_or_none()
+@lru_cache(maxsize=None)
+async def get_symbol(ticker, session):
+    result = await session.execute(select(Symbol).filter_by(ticker=ticker))
+    return result.scalar_one_or_none()
 
+
+async def process_update_quote(quote_data_list, session):
+    all_quotes_dict = {}
+
+    for quote_data in quote_data_list[0]:
+        symbol = await get_symbol(quote_data["Symbol"], session)
         if symbol is None:
             logger.warning(f"Symbol not found: {quote_data['Symbol']}")
             continue
 
-        update_quote = await session.execute(
-            select(UpdateQuote).filter_by(symbol_ticker=symbol.ticker)
-        )
-        update_quote = update_quote.scalar_one_or_none()
+        if symbol.ticker not in all_quotes_dict:
+            update_quote = UpdateQuoteData(symbol_ticker=symbol.ticker)
 
-        if update_quote is None:
-            update_quote = UpdateQuote(symbol_ticker=symbol.ticker)
-            session.add(update_quote)
+            filtered_data = {
+                UPDATE_QUOTE_MAPPING.get(k, k): v
+                for k, v in quote_data.items()
+                if UPDATE_QUOTE_MAPPING.get(k, k) in UpdateQuote.__table__.columns
+            }
 
-        filtered_data = {
-            UPDATE_QUOTE_MAPPING.get(k, k): v
-            for k, v in quote_data.items()
-            if UPDATE_QUOTE_MAPPING.get(k, k) in UpdateQuote.__table__.columns
-        }
+            # Update the in-memory object
+            for key, value in filtered_data.items():
+                setattr(update_quote, key, value)
 
-        # Convert date string to date and datetime objects
-        if "date" in filtered_data and filtered_data["date"] is not None:
-            dt = datetime.datetime.fromisoformat(
-                filtered_data["date"].replace("Z", "+00:00")
+            logger.info(
+                f"{Fore.GREEN}Realtime data : {Fore.YELLOW}{update_quote.symbol_ticker}{Style.RESET_ALL}"
             )
-            filtered_data["date"] = dt.date()
-            filtered_data["datetime"] = dt
-
-        for key, value in filtered_data.items():
-            setattr(update_quote, key, value)
-
-        logger.info(
-            f"{Fore.GREEN}Realtime data : {Fore.YELLOW}{update_quote.symbol_ticker}{Style.RESET_ALL}"
-        )
-        await session.flush()
-
+            # update_quote.symbol = symbol.ticker
+            update_quote.datetime = (
+                datetime.datetime.fromisoformat(update_quote.date[:-1])
+                + datetime.timedelta(hours=7)
+            ).isoformat()
+            update_quote.date = update_quote.date.split("T")[0]
+            all_quotes_dict[symbol.ticker] = update_quote
+            print(all_quotes_dict[symbol.ticker].__dict__)
+            # Prepare the data to save
+            quote_data = all_quotes_dict[symbol.ticker].__dict__
+            quote_data = {k: v if v is not None else "null" for k, v in all_quotes_dict[symbol.ticker].__dict__.items()}  # Convert None to "null"
+            stream_key = "quote_stream"  # Define the stream key
+            redis_client.xadd(stream_key, quote_data, id='*')  # '*' generates a unique ID
 
 async def process_message(message, session):
     data = json.loads(message)
@@ -161,13 +238,15 @@ async def receive_data_from_websocket():
                         )
                         try:
                             pong = await websocket.ping()
-                            await asyncio.wait_for(pong, timeout=10)
+                            await asyncio.wait_for(
+                                pong, timeout=10
+                            )  # Ensure pong is awaited only once
                             logger.info(
                                 f"{Fore.GREEN}Connection is still alive{Style.RESET_ALL}"
                             )
-                        except:
+                        except Exception as ping_error:  # Catch specific exceptions
                             logger.error(
-                                f"{Fore.RED}Ping failed. Reconnecting...{Style.RESET_ALL}"
+                                f"{Fore.RED}Ping failed: {ping_error}. Reconnecting...{Style.RESET_ALL}"
                             )
                             break  # Exit inner loop to reconnect
 
