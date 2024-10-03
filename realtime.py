@@ -14,9 +14,8 @@ import colorama
 from colorama import Fore, Style
 from pathlib import Path
 from functools import lru_cache  
-import redis  
+import redis
 
-redis_client = redis.Redis.from_url("redis://localhost:6379/0")
 colorama.init(autoreset=True)
 
 
@@ -29,80 +28,8 @@ logger.add(
 
 load_dotenv()
 
-
-class UpdateQuoteData:
-    def __init__(
-        self,
-        symbol_ticker=None,
-        price_current=None,
-        price_last=None,
-        price_high=None,
-        price_low=None,
-        price_open=None,
-        price_close=None,
-        price_average=None,
-        price_change=None,
-        price_percent_change=None,
-        volume=None,
-        total_active_buy_volume=None,
-        total_active_sell_volume=None,
-        buy_foreign_quantity=None,
-        buy_foreign_value=None,
-        sell_foreign_quantity=None,
-        sell_foreign_value=None,
-        current_foreign_room=None,
-        total_volume=None,
-        total_value=None,
-        date=None,
-        price_bid1=None,
-        quantity_bid1=None,
-        price_bid2=None,
-        quantity_bid2=None,
-        price_bid3=None,
-        quantity_bid3=None,
-        price_ask1=None,
-        quantity_ask1=None,
-        price_ask2=None,
-        quantity_ask2=None,
-        price_ask3=None,
-        quantity_ask3=None,
-        datetime=None,
-    ):  
-        self.symbol_ticker = symbol_ticker
-        self.price_current = price_current
-        self.price_last = price_last
-        self.price_high = price_high
-        self.price_low = price_low
-        self.price_open = price_open
-        self.price_close = price_close
-        self.price_average = price_average
-        self.price_change = price_change
-        self.price_percent_change = price_percent_change
-        self.volume = volume
-        self.total_active_buy_volume = total_active_buy_volume
-        self.total_active_sell_volume = total_active_sell_volume
-        self.buy_foreign_quantity = buy_foreign_quantity
-        self.buy_foreign_value = buy_foreign_value
-        self.sell_foreign_quantity = sell_foreign_quantity
-        self.sell_foreign_value = sell_foreign_value
-        self.current_foreign_room = current_foreign_room
-        self.total_volume = total_volume
-        self.total_value = total_value
-        self.price_bid1 = price_bid1
-        self.quantity_bid1 = quantity_bid1
-        self.price_bid2 = price_bid2
-        self.quantity_bid2 = quantity_bid2
-        self.price_bid3 = price_bid3
-        self.quantity_bid3 = quantity_bid3
-        self.price_ask1 = price_ask1
-        self.quantity_ask1 = quantity_ask1
-        self.price_ask2 = price_ask2
-        self.quantity_ask2 = quantity_ask2
-        self.price_ask3 = price_ask3
-        self.quantity_ask3 = quantity_ask3
-        self.date = date
-        self.datetime = datetime
-        
+# redis_client = redis.Redis.from_url(os.getenv("REDIS"))
+redis_client= redis.Redis(host='localhost', port=6379, db=0)
 
 def get_url():
     user = os.getenv("USERDB")
@@ -136,10 +63,10 @@ def is_trading_time():
         hour, minute = map(int, time_str.split(":"))
         return hour, minute
 
-    morning_start = parse_time("MORNING_START", "9:00")
-    morning_end = parse_time("MORNING_END", "11:30")
-    afternoon_start = parse_time("AFTERNOON_START", "13:00")
-    afternoon_end = parse_time("AFTERNOON_END", "15:00")
+    morning_start = parse_time("MORNING_START", "8:55")
+    morning_end = parse_time("MORNING_END", "11:31")
+    afternoon_start = parse_time("AFTERNOON_START", "12:55")
+    afternoon_end = parse_time("AFTERNOON_END", "15:05")
 
     current_time = now.hour * 60 + now.minute
     morning_start_minutes = morning_start[0] * 60 + morning_start[1]
@@ -162,43 +89,56 @@ async def get_symbol(ticker, session):
 
 
 async def process_update_quote(quote_data_list, session):
-    all_quotes_dict = {}
-
     for quote_data in quote_data_list[0]:
         symbol = await get_symbol(quote_data["Symbol"], session)
         if symbol is None:
             logger.warning(f"Symbol not found: {quote_data['Symbol']}")
             continue
 
-        if symbol.ticker not in all_quotes_dict:
-            update_quote = UpdateQuoteData(symbol_ticker=symbol.ticker)
+        # Prepare new data to completely overwrite the existing data
+        new_data = {
+            UPDATE_QUOTE_MAPPING.get(k, k): v
+            for k, v in quote_data.items()
+            if UPDATE_QUOTE_MAPPING.get(k, k) in UpdateQuote.__table__.columns
+        }
 
-            filtered_data = {
-                UPDATE_QUOTE_MAPPING.get(k, k): v
-                for k, v in quote_data.items()
-                if UPDATE_QUOTE_MAPPING.get(k, k) in UpdateQuote.__table__.columns
-            }
-
-            # Update the in-memory object
-            for key, value in filtered_data.items():
-                setattr(update_quote, key, value)
-
-            logger.info(
-                f"{Fore.GREEN}Realtime data : {Fore.YELLOW}{update_quote.symbol_ticker}{Style.RESET_ALL}"
-            )
-            # update_quote.symbol = symbol.ticker
-            update_quote.datetime = (
-                datetime.datetime.fromisoformat(update_quote.date[:-1])
+        # Update datetime and date fields
+        if "date" in new_data:
+            new_data["datetime"] = (
+                datetime.datetime.fromisoformat(new_data["date"][:-1])
                 + datetime.timedelta(hours=7)
             ).isoformat()
-            update_quote.date = update_quote.date.split("T")[0]
-            all_quotes_dict[symbol.ticker] = update_quote
-            print(all_quotes_dict[symbol.ticker].__dict__)
-            # Prepare the data to save
-            quote_data = all_quotes_dict[symbol.ticker].__dict__
-            quote_data = {k: v if v is not None else "null" for k, v in all_quotes_dict[symbol.ticker].__dict__.items()}  # Convert None to "null"
-            stream_key = "quote_stream"  # Define the stream key
-            redis_client.xadd(stream_key, quote_data, id='*')  # '*' generates a unique ID
+            new_data["date"] = new_data["date"].split("T")[0]
+
+        # Store the new quote data in Redis as a hash
+        redis_key = f"{symbol.ticker}"
+        redis_client.hset(redis_key, mapping={k: v if v is not None else "null" for k, v in new_data.items()})
+
+        # Use a Lua script to copy the hash data to the list
+        list_key = f"{symbol.ticker}"
+        lua_script = """
+            local hash_key = KEYS[1]
+            local list_key = KEYS[2]
+            local hash_data = redis.call('HGETALL', hash_key)
+            local json_data = cjson.encode(hash_data)
+            redis.call('RPUSH', list_key, json_data)
+            return json_data
+        """
+        redis_client.eval(lua_script, 2, redis_key, list_key)
+
+        logger.info(f"{Fore.GREEN}Realtime data : {Fore.YELLOW}{symbol.ticker}{Style.RESET_ALL}")
+
+
+async def get_all_data_for_symbol(redis, symbol):
+    list_key = f"price_history:{symbol.ticker}"
+    
+    # Retrieve all data from the list
+    all_data = await redis.lrange(list_key, 0, -1)
+    
+    # Deserialize from JSON if needed
+    all_data = [json.loads(data) for data in all_data]
+    
+    return all_data
 
 async def process_message(message, session):
     data = json.loads(message)
