@@ -91,9 +91,7 @@ async def get_symbol(ticker, session):
 
 async def process_update_quote(quote_data_list, session):
     for quote_data in quote_data_list[0]:
-        symbol = await get_symbol(quote_data["Symbol"], session)
-        if symbol is None:
-            logger.warning(f"Symbol not found: {quote_data['Symbol']}")
+        if len(quote_data) == 0:
             continue
 
         # Prepare new data to completely overwrite the existing data
@@ -109,23 +107,17 @@ async def process_update_quote(quote_data_list, session):
                 datetime.datetime.fromisoformat(new_data["date"][:-1])
                 + datetime.timedelta(hours=7)
             ).isoformat()
-            new_data["date"] = new_data["date"].split("T")[0]
+        del new_data["date"]
 
         # Store the new quote data in Redis as a hash
-        redis_key = f"{symbol.ticker}"
-        list_key = f"{symbol.ticker}:list"
-        stream_key = f"{symbol.ticker}:stream"  # Define the stream key
-
+        redis_key = f"{quote_data['Symbol']}"
+        stream_key = f"{quote_data['Symbol']}:stream"  # Define the stream key
+        redis_client.hset(redis_key, mapping={k: v if v is not None else "null" for k, v in new_data.items()}) 
         lua_script = """
             local hash_key = KEYS[1]
-            local list_key = KEYS[2]
-            local stream_key = KEYS[3]
-            
+            local stream_key = KEYS[2]
             local hash_data = redis.call('HGETALL', hash_key)
             local json_data = cjson.encode(hash_data)
-            
-            -- Push to list
-            redis.call('RPUSH', list_key, json_data)
             
             -- Push to stream
             redis.call('XADD', stream_key, '*', 'data', json_data)
@@ -133,23 +125,38 @@ async def process_update_quote(quote_data_list, session):
             return json_data
         """
 
-        redis_client.eval(lua_script, 3, redis_key, list_key, stream_key)
+        redis_client.eval(lua_script, 2, redis_key, stream_key)
 
         logger.info(
-            f"{Fore.GREEN}Realtime data : {Fore.YELLOW}{symbol.ticker}{Style.RESET_ALL}"
+            f"{Fore.GREEN}Realtime data : {Fore.YELLOW}{quote_data['Symbol']}{Style.RESET_ALL}"
         )
 
 
-async def get_all_data_for_symbol(redis, symbol):
-    list_key = f"price_history:{symbol.ticker}"
+async def process_update_intraday_quote(quote_data_list, session):
+    for quote_data in quote_data_list[0]:
+        if len(quote_data) == 0:
+            continue
+        # Update datetime and date fields
+        if "Date" in quote_data:
+            quote_data["datetime"] = (
+                datetime.datetime.fromisoformat(quote_data["Date"][:-1])
+                + datetime.timedelta(hours=7)
+            ).isoformat()
+        del quote_data["Date"]
+        del quote_data["ID"]
+        stream_key = f"{quote_data['Symbol']}:side"
 
-    # Retrieve all data from the list
-    all_data = await redis.lrange(list_key, 0, -1)
+        # Convert quote data to JSON
+        json_data = json.dumps(quote_data)
 
-    # Deserialize from JSON if needed
-    all_data = [json.loads(data) for data in all_data]
-
-    return all_data
+        # Push to stream
+        try:
+            redis_client.xadd(stream_key, {"data": json_data})
+            logger.info(
+                f"{Fore.GREEN}Realtime data : {Fore.YELLOW}{quote_data['Symbol']}{Style.RESET_ALL} - {json_data}"
+            )
+        except Exception as e:
+            logger.error(f"Error processing quote for {quote_data['Symbol']}: {e}")
 
 
 async def process_message(message, session):
@@ -160,6 +167,8 @@ async def process_message(message, session):
             await process_update_quote(
                 data["M"][0]["A"], session
             )  # Pass the entire list
+        elif method == "updateIntradayQuote":
+            await process_update_intraday_quote(data["M"][0]["A"], session)
         else:
             logger.info(f"Skipped unknown method: {method}")
     elif "C" in data and "S" in data and "M" in data and not data["M"]:

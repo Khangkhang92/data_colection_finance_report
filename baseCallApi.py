@@ -26,7 +26,7 @@ class baseCallAPI:
         """Pause execution for a random duration."""
         time.sleep(random.uniform(min_seconds, max_seconds))
 
-    def fetch_posts(self, params = {}, max_retries=1):
+    def fetch_posts(self, params={}, max_retries=1):
         """Fetch posts from the API with retries."""
         for attempt in range(max_retries):
             try:
