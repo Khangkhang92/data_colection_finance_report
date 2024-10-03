@@ -13,7 +13,7 @@ from const import UPDATE_QUOTE_MAPPING
 import colorama
 from colorama import Fore, Style
 from pathlib import Path
-from functools import lru_cache  
+from functools import lru_cache
 import redis
 
 colorama.init(autoreset=True)
@@ -29,7 +29,8 @@ logger.add(
 load_dotenv()
 
 # redis_client = redis.Redis.from_url(os.getenv("REDIS"))
-redis_client= redis.Redis(host='localhost', port=6379, db=0)
+redis_client = redis.Redis(host="localhost", port=6379, db=0)
+
 
 def get_url():
     user = os.getenv("USERDB")
@@ -65,7 +66,7 @@ def is_trading_time():
 
     morning_start = parse_time("MORNING_START", "8:55")
     morning_end = parse_time("MORNING_END", "11:31")
-    afternoon_start = parse_time("AFTERNOON_START", "12:55")
+    afternoon_start = parse_time("AFTERNOON_START", "12:40")
     afternoon_end = parse_time("AFTERNOON_END", "15:05")
 
     current_time = now.hour * 60 + now.minute
@@ -112,33 +113,44 @@ async def process_update_quote(quote_data_list, session):
 
         # Store the new quote data in Redis as a hash
         redis_key = f"{symbol.ticker}"
-        redis_client.hset(redis_key, mapping={k: v if v is not None else "null" for k, v in new_data.items()})
+        list_key = f"{symbol.ticker}:list"
+        stream_key = f"{symbol.ticker}:stream"  # Define the stream key
 
-        # Use a Lua script to copy the hash data to the list
-        list_key = f"{symbol.ticker}"
         lua_script = """
             local hash_key = KEYS[1]
             local list_key = KEYS[2]
+            local stream_key = KEYS[3]
+            
             local hash_data = redis.call('HGETALL', hash_key)
             local json_data = cjson.encode(hash_data)
+            
+            -- Push to list
             redis.call('RPUSH', list_key, json_data)
+            
+            -- Push to stream
+            redis.call('XADD', stream_key, '*', 'data', json_data)
+            
             return json_data
         """
-        redis_client.eval(lua_script, 2, redis_key, list_key)
 
-        logger.info(f"{Fore.GREEN}Realtime data : {Fore.YELLOW}{symbol.ticker}{Style.RESET_ALL}")
+        redis_client.eval(lua_script, 3, redis_key, list_key, stream_key)
+
+        logger.info(
+            f"{Fore.GREEN}Realtime data : {Fore.YELLOW}{symbol.ticker}{Style.RESET_ALL}"
+        )
 
 
 async def get_all_data_for_symbol(redis, symbol):
     list_key = f"price_history:{symbol.ticker}"
-    
+
     # Retrieve all data from the list
     all_data = await redis.lrange(list_key, 0, -1)
-    
+
     # Deserialize from JSON if needed
     all_data = [json.loads(data) for data in all_data]
-    
+
     return all_data
+
 
 async def process_message(message, session):
     data = json.loads(message)

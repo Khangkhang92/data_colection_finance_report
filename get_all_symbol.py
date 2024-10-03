@@ -5,32 +5,24 @@ from dotenv import load_dotenv
 from loguru import logger
 from models import Symbol
 from common.db import ScopedSession
+from baseCallApi import baseCallAPI
 
 
 def fetch_allsymbol():
     load_dotenv()
-    url = os.getenv("ALL_SYMBOL_URL")
+    url = os.getenv("ALL_SYMBOL_URL2")
     jwt_token = os.getenv("TOKEN")
-    headers = {"JWTToken": jwt_token, "Content-Type": "application/json"}
-
-    try:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        raw_data = response.json()
-        mapping_exchange(raw_data)
-    except requests.RequestException as e:
-        logger.error(f"An error occurred: {e}")
+    basecallapi = baseCallAPI(url, jwt_token)
+    raw_data = basecallapi.fetch_posts()
+    mapping_exchange(raw_data)
 
 
 def mapping_exchange(raw_data):
-    convert = {"HOSTC": "HSX", "HASTC": "HNX", "UPCOM": "UPCOM"}
     symbol_info_list = [
         {
-            "ticker": data.get("<Symbol>k__BackingField"),
-            "company_name": data.get("<Name>k__BackingField"),
-            "exchange": convert.get(data.get("<Exchange>k__BackingField")),
-            "industry": data.get("<Industry>k__BackingField"),
-            "sector": data.get("<Sector>k__BackingField"),
+            "ticker": data.get("symbol"),
+            "company_name": data.get("name"),
+            "exchange": data.get("exchange"),
         }
         for data in raw_data
     ]
