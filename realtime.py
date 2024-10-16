@@ -153,7 +153,7 @@ async def process_update_intraday_quote(quote_data_list, session):
         try:
             redis_client.xadd(stream_key, {"data": json_data})
             logger.info(
-                f"{Fore.GREEN}Realtime data : {Fore.YELLOW}{quote_data['Symbol']}{Style.RESET_ALL} - {json_data}"
+                f"{Fore.GREEN}Realtime data : {Fore.YELLOW}{quote_data['Symbol']}{Style.RESET_ALL}"
             )
         except Exception as e:
             logger.error(f"Error processing quote for {quote_data['Symbol']}: {e}")

@@ -1,14 +1,14 @@
 version: '3'
 services:
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    environment:
-      GF_SECURITY_ADMIN_PASSWORD: admin
-    ports:
-      - "3000:3000"
-    depends_on:
-      - postgres
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   container_name: grafana
+  #   environment:
+  #     GF_SECURITY_ADMIN_PASSWORD: admin
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - postgres
 
   postgres:
     image: postgres:latest
