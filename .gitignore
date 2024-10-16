@@ -7,3 +7,4 @@ backup.sql
 *.dump
 logs/
 markets_data/
+logfile.log

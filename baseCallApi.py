@@ -1,15 +1,16 @@
 from dotenv import load_dotenv
-import os
+
 import requests
 import random
 import time
 from loguru import logger
 from fake_useragent import UserAgent
 
+
 load_dotenv()
 
 
-class baseCallAPI:
+class BaseCallAPI:
     def __init__(self, base_url, auth_token):
         self.base_url = base_url
         self.headers = {
@@ -42,3 +43,6 @@ class baseCallAPI:
                     logger.error("Max retries reached.")
                     return None
                 self.random_delay(5, 10)
+
+
+     
