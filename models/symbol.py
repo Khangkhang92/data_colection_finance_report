@@ -25,3 +25,5 @@ class Symbol(CommonModel):
         "HistoryDataProcessing", back_populates="symbol"
     )
     tagged_symbols = relationship("TaggedSymbol", back_populates="symbol")
+
+    score = relationship("Score", back_populates="symbol")

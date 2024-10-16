@@ -33,8 +33,10 @@ baseCallAPI.headers.update({
         "Sec-Fetch-Site": "same-site",
         "TE": "trailers",
     })
+start_index = all_symbols.index("DC4")
+symbols_to_fetch = all_symbols[start_index:]
 
-for symbol in all_symbols:
+for symbol in symbols_to_fetch:
     FULL_URL = f"{SCORE_URL}/{symbol}/financial-data"
     baseCallAPI.base_url = FULL_URL
     # redis_client.flushdb()

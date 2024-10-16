@@ -6,3 +6,4 @@ from .major_holder import MajorHolder
 from .daily_market import DailyMarket
 from .history_data_processing import HistoryDataProcessing
 from .posts import Post, PostGroup, PostSource, TaggedSymbol
+from .score import Score
