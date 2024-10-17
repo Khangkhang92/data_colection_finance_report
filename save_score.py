@@ -15,7 +15,6 @@ batch_size = 1000
 scores_to_upsert = []
 
 
-
 def from_dict(data):
     return {
         "quarter": data.get("Quarter", 0),
@@ -48,7 +47,9 @@ with ScopedSession() as session:
         list_items = redis_client.lrange(list_key, 0, -1)
 
         for item in list_items:
-            financial_values = json.loads(item.decode('utf-8')).get("financialValues", {})
+            financial_values = json.loads(item.decode("utf-8")).get(
+                "financialValues", {}
+            )
             score_dict = from_dict(financial_values)
             score_dict["symbol_ticker"] = symbol
             scores_to_upsert.append(score_dict)
@@ -58,8 +59,12 @@ with ScopedSession() as session:
                 for batch_score in scores_to_upsert:
                     stmt = insert(Score).values(score_dict)
                     stmt = stmt.on_conflict_do_update(
-                        index_elements=[ 'year', 'quarter', 'symbol_ticker'],  # Unique constraint columns
-                        set_ = {
+                        index_elements=[
+                            "year",
+                            "quarter",
+                            "symbol_ticker",
+                        ],  # Unique constraint columns
+                        set_={
                             "roas_score": stmt.excluded.roas_score,
                             "cfo_score": stmt.excluded.cfo_score,
                             "delta_roas_score": stmt.excluded.delta_roas_score,
@@ -77,8 +82,8 @@ with ScopedSession() as session:
                             "manufacturing_sp_rating": stmt.excluded.manufacturing_sp_rating,
                             "non_manufacturing_sp_rating": stmt.excluded.non_manufacturing_sp_rating,
                             "manufacturing_moody_rating": stmt.excluded.manufacturing_moody_rating,
-                            "non_manufacturing_moody_rating": stmt.excluded.non_manufacturing_moody_rating
-                        }
+                            "non_manufacturing_moody_rating": stmt.excluded.non_manufacturing_moody_rating,
+                        },
                     )
                     session.execute(stmt)
                 session.commit()
@@ -91,27 +96,31 @@ with ScopedSession() as session:
             score_dict["symbol_ticker"] = symbol
             stmt = insert(Score).values(score_dict)
             stmt = stmt.on_conflict_do_update(
-                        index_elements=[ 'year', 'quarter', 'symbol_ticker'],  # Unique constraint columns
-                        set_ = {
-                            "roas_score": stmt.excluded.roas_score,
-                            "cfo_score": stmt.excluded.cfo_score,
-                            "delta_roas_score": stmt.excluded.delta_roas_score,
-                            "accrual_score": stmt.excluded.accrual_score,
-                            "delta_lever_score": stmt.excluded.delta_lever_score,
-                            "delta_liquid_score": stmt.excluded.delta_liquid_score,
-                            "eq_offer_score": stmt.excluded.eq_offer_score,
-                            "delta_margin_score": stmt.excluded.delta_margin_score,
-                            "delta_turn_score": stmt.excluded.delta_turn_score,
-                            "piotroski_f_score": stmt.excluded.piotroski_f_score,
-                            "manufacturing_z_score": stmt.excluded.manufacturing_z_score,
-                            "non_manufacturing_z_score": stmt.excluded.non_manufacturing_z_score,
-                            "manufacturing_status": stmt.excluded.manufacturing_status,
-                            "non_manufacturing_status": stmt.excluded.non_manufacturing_status,
-                            "manufacturing_sp_rating": stmt.excluded.manufacturing_sp_rating,
-                            "non_manufacturing_sp_rating": stmt.excluded.non_manufacturing_sp_rating,
-                            "manufacturing_moody_rating": stmt.excluded.manufacturing_moody_rating,
-                            "non_manufacturing_moody_rating": stmt.excluded.non_manufacturing_moody_rating
-                        }
-                    )
+                index_elements=[
+                    "year",
+                    "quarter",
+                    "symbol_ticker",
+                ],  # Unique constraint columns
+                set_={
+                    "roas_score": stmt.excluded.roas_score,
+                    "cfo_score": stmt.excluded.cfo_score,
+                    "delta_roas_score": stmt.excluded.delta_roas_score,
+                    "accrual_score": stmt.excluded.accrual_score,
+                    "delta_lever_score": stmt.excluded.delta_lever_score,
+                    "delta_liquid_score": stmt.excluded.delta_liquid_score,
+                    "eq_offer_score": stmt.excluded.eq_offer_score,
+                    "delta_margin_score": stmt.excluded.delta_margin_score,
+                    "delta_turn_score": stmt.excluded.delta_turn_score,
+                    "piotroski_f_score": stmt.excluded.piotroski_f_score,
+                    "manufacturing_z_score": stmt.excluded.manufacturing_z_score,
+                    "non_manufacturing_z_score": stmt.excluded.non_manufacturing_z_score,
+                    "manufacturing_status": stmt.excluded.manufacturing_status,
+                    "non_manufacturing_status": stmt.excluded.non_manufacturing_status,
+                    "manufacturing_sp_rating": stmt.excluded.manufacturing_sp_rating,
+                    "non_manufacturing_sp_rating": stmt.excluded.non_manufacturing_sp_rating,
+                    "manufacturing_moody_rating": stmt.excluded.manufacturing_moody_rating,
+                    "non_manufacturing_moody_rating": stmt.excluded.non_manufacturing_moody_rating,
+                },
+            )
             session.execute(stmt)
         session.commit()

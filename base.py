@@ -8,5 +8,4 @@ class Base:
     @lru_cache(maxsize=1)
     def get_all_symbols(self):
         with ScopedSession() as session:
-            return session.execute(select(Symbol.ticker)).scalars().all()       
-
+            return session.execute(select(Symbol.ticker)).scalars().all()

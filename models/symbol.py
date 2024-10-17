@@ -28,3 +28,4 @@ class Symbol(CommonModel):
 
     score = relationship("Score", back_populates="symbol")
     market_mentions = relationship("MarketMention", back_populates="symbol")
+    subsidiaries = relationship("Subsidiaries", back_populates="symbol")

@@ -43,14 +43,16 @@ second = """{
 async def connect(temp):
     while True:
         try:
-            async with websockets.connect(f"wss://tradestation.fireant.vn/quote?access_token={temp}") as websocket:
+            async with websockets.connect(
+                f"wss://tradestation.fireant.vn/quote?access_token={temp}"
+            ) as websocket:
                 await websocket.send('{"protocol":"json","version":1}')
                 await websocket.send(first)
                 await websocket.send(second)
                 response = await websocket.recv()
                 print(response)
         except asyncio.TimeoutError:
-                print("error")    
+            print("error")
 
 
 asyncio.get_event_loop().run_until_complete(connect(temp))

@@ -112,7 +112,10 @@ async def process_update_quote(quote_data_list, session):
         # Store the new quote data in Redis as a hash
         redis_key = f"{quote_data['Symbol']}"
         stream_key = f"{quote_data['Symbol']}:stream"  # Define the stream key
-        redis_client.hset(redis_key, mapping={k: v if v is not None else "null" for k, v in new_data.items()}) 
+        redis_client.hset(
+            redis_key,
+            mapping={k: v if v is not None else "null" for k, v in new_data.items()},
+        )
         lua_script = """
             local hash_key = KEYS[1]
             local stream_key = KEYS[2]

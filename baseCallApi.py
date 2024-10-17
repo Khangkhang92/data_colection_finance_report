@@ -43,6 +43,3 @@ class BaseCallAPI:
                     logger.error("Max retries reached.")
                     return None
                 self.random_delay(5, 10)
-
-
-     

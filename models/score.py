@@ -10,14 +10,13 @@ from sqlalchemy.orm import relationship
 from .base import CommonModel
 
 
-
 class Score(CommonModel):
     __tablename__ = "score"
-    id = Column(Integer, primary_key=True, autoincrement=True)  
+    id = Column(Integer, primary_key=True, autoincrement=True)
     symbol_ticker = Column(
         String(length=15), ForeignKey("symbol.ticker"), nullable=False
     )
-    
+
     roas_score = Column(Integer)
     cfo_score = Column(Integer)
     delta_roas_score = Column(Integer)
@@ -37,8 +36,8 @@ class Score(CommonModel):
     manufacturing_moody_rating = Column(String)
     non_manufacturing_moody_rating = Column(String)
     quarter = Column(Integer, nullable=False)
-    year = Column(Integer, nullable=False) 
-    company_type =  Column(String, nullable=False)
+    year = Column(Integer, nullable=False)
+    company_type = Column(String, nullable=False)
 
     symbol = relationship("Symbol", back_populates="score")
 
@@ -47,12 +46,12 @@ class Score(CommonModel):
             "symbol_ticker", "quarter", "year", name="unique_score_quarter_year"
         ),
     )
-    
+
     @classmethod
     def from_dict(cls, data):
         return cls(
             quarter=data.get("Quarter", 0),
-            year=data.get("Year", 0),  
+            year=data.get("Year", 0),
             company_type=data.get("CompanyType", ""),
             roas_score=data.get("ROAScore", 0),
             cfo_score=data.get("CFOScore", 0),
