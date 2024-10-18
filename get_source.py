@@ -1,13 +1,12 @@
 from models import PostSource, PostGroup
-from baseCallApi import BaseCallAPI
+from getdata.base import Base
 from common.db import ScopedSession
 import os
 
 
 def post_source():
     POST_SOURCE = os.getenv("POST_SOURCE")
-    token = f"Bearer {os.getenv('TOKEN_REST2')}"
-    base_call_api = BaseCallAPI(POST_SOURCE, token)
+    base_call_api = Base(POST_SOURCE)
     list_source = base_call_api.fetch_posts()
 
     with ScopedSession() as session:
@@ -38,8 +37,7 @@ def post_source():
 
 def post_group():
     SOURCE_GROUP = os.getenv("SOURCE_GROUP")
-    token = f"Bearer {os.getenv('TOKEN_REST2')}"
-    base_call_api = BaseCallAPI(SOURCE_GROUP, token)
+    base_call_api = Base(SOURCE_GROUP)
     list_source = base_call_api.fetch_posts()
 
     with ScopedSession() as session:

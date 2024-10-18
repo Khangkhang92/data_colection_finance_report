@@ -1,7 +1,7 @@
 import redis
 from common.db import ScopedSession
 from models import Score
-from base import Base
+from getdata.base import Base
 import json
 from loguru import logger
 from sqlalchemy.dialects.postgresql import insert

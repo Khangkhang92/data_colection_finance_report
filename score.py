@@ -1,5 +1,4 @@
-from baseCallApi import BaseCallAPI
-from base import Base
+from getdata.base import Base
 from dotenv import load_dotenv
 import os
 import redis
@@ -8,8 +7,6 @@ from loguru import logger
 
 load_dotenv()
 SCORE_URL = os.getenv("SCORE_URL")
-TOKEN = os.getenv("TOKEN_REST2")
-token = f"Bearer {TOKEN}"
 redis_client = redis.Redis(host="127.0.0.1", port="6379", db=1)
 
 quater_params = {"type": "Q", "count": 60}
@@ -19,7 +16,7 @@ year_params = {"type": "Y", "count": 15}
 base = Base()
 all_symbols = base.get_all_symbols()
 
-baseCallAPI = BaseCallAPI(SCORE_URL, token)
+baseCallAPI = Base(SCORE_URL)
 baseCallAPI.headers.update(
     {
         "Connection": "keep-alive",

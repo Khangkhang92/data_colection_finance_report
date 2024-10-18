@@ -1,9 +1,8 @@
 from models import MajorHolder, Subsidiaries
-from baseCallApi import BaseCallAPI
 from common.db import ScopedSession
 import os
 from loguru import logger
-from base import Base
+from getdata.base import Base
 
 
 def get_holder(symbol):
@@ -11,12 +10,10 @@ def get_holder(symbol):
     if not HOLDER_URL:
         logger.error("HOLDER environment variable is not set.")
         return
-
     FULL_URL = f"{HOLDER_URL}/{symbol}/holders"
-    token = f"Bearer {os.getenv('TOKEN_REST2')}"
 
     try:
-        base_call_api = BaseCallAPI(FULL_URL, token)
+        base_call_api = Base(FULL_URL)
         list_holder = base_call_api.fetch_posts()
     except Exception as e:
         logger.error(f"Failed to fetch holders for {symbol}: {e}")
@@ -52,18 +49,18 @@ def get_subsidiaries(symbol, all_symbols):
     if not SUBSIDIARIES:
         logger.error("SUBSIDIARIES environment variable is not set.")
         return
-
     FULL_URL = f"{SUBSIDIARIES}/{symbol}/subsidiaries"
-    token = f"Bearer {os.getenv('TOKEN_REST2')}"
 
     try:
-        base_call_api = BaseCallAPI(FULL_URL, token)
+        base_call_api = Base(FULL_URL)
         list_subsidiaries = base_call_api.fetch_posts()
     except Exception as e:
         logger.error(f"Failed to fetch holders for {symbol}: {e}")
         return
 
     major_subsidiaries_list = []
+    if len(major_subsidiaries_list) == 0:
+        return
 
     for subsidiaries in list_subsidiaries:
         try:
@@ -80,7 +77,7 @@ def get_subsidiaries(symbol, all_symbols):
             subsidiaries["sub_symbol"] = subsidiaries.pop("symbol", False)
             major_subsidiaries_list.append(Subsidiaries(**subsidiaries))
         except KeyError as e:
-            logger.warning(f"Missing expected key in holder data: {e}")
+            logger.warning(f"Missing expected key in subsidiaries data: {e}")
 
     try:
         with ScopedSession() as session:

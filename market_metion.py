@@ -1,18 +1,15 @@
 from models import MarketMention
-from baseCallApi import BaseCallAPI
 from common.db import ScopedSession
 import os
 from dotenv import load_dotenv
-from base import Base
+from getdata.base import Base
 from datetime import date
 
 periods = ["today", "weekly", "monthly"]
 
 load_dotenv()
 MARKET_MENTION_URL = os.getenv("MARKET_MENTION")
-TOKEN = os.getenv("TOKEN_REST2")
-token = f"Bearer {TOKEN}"
-base_call_api = BaseCallAPI(MARKET_MENTION_URL, token)
+base_call_api = Base(MARKET_MENTION_URL)
 today = date.today()
 
 base = Base()
