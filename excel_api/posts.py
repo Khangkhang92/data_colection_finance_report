@@ -12,19 +12,18 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy import select
 from functools import lru_cache
 from pathlib import Path
-from getdata.base import Base
+
 
 load_dotenv()
 
-
 # API endpoint and headers
-BASE_URL = os.getenv("POST")
+BASE_URL = os.getenv("POSTS")
 HEADERS = {
     "User-Agent": UserAgent().random,
     "Accept": "application/json, text/plain, */*",
     "Accept-Language": "en-US,en;q=0.5",
     "Accept-Encoding": "gzip, deflate, br, zstd",
-    "Authorization": f"Bearer {os.getenv('TOKEN_REST2')}",
+    "Authorization": os.getenv("FIREANT_AUTH_TOKEN"),
     "Origin": "https://fireant.vn",
     "Referer": "https://fireant.vn/",
 }
@@ -198,7 +197,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--type", type=int, default=1, help="Type of posts to fetch")
     parser.add_argument(
-        "--step", type=int, default=100, help="Number of posts per API call"
+        "--step", type=int, default=10, help="Number of posts per API call"
     )
 
     parser.add_argument(
