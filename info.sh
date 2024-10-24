@@ -1,10 +1,10 @@
 #!/bin/bash
 
-cd /media/computer/4e7b67c0-0b77-4ca9-9c68-0568856a766b/self/data_colection_finance_report
+cd /home/shota72fx/data_colection_finance_report
+#docker compose up -d 
 
-docker compose up -d 
+source /home/shota72fx/miniconda3/bin/activate data
 
 
-source /home/computer/miniconda3/bin/activate data
-
-python /media/computer/4e7b67c0-0b77-4ca9-9c68-0568856a766b/self/data_colection_finance_report/market_mention.py > /media/computer/4e7b67c0-0b77-4ca9-9c68-0568856a766b/self/data_colection_finance_report/info.log 2>&1
+python /home/shota72fx/data_colection_finance_report/market_metion.py > /home/shota72fx/data_colection_finance_report/market_metion.log 2>&1
+python /home/shota72fx/data_colection_finance_report/posts.py > /home/shota72fx/data_colection_finance_report/posts.log 2>&1
