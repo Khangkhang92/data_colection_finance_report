@@ -8,7 +8,7 @@ from sqlalchemy import (
     Date,
     UniqueConstraint,
 )
-from sqlalchemy.orm import relationship, mapped_column
+from sqlalchemy.orm import relationship
 from .base import CommonModel
 
 
@@ -60,6 +60,6 @@ class UpdateQuote(CommonModel):
         return f"<UpdateQuote(symbol='{self.symbol}', date='{self.date}')>"
 
 
-#     __table_args__ = (
-#        UniqueConstraint('symbol_ticker', 'date', name='uq_update_quote_symbol_date'),
-#    )
+    __table_args__ = (
+       UniqueConstraint('symbol_ticker', 'date', name='uq_update_quote_symbol_date2'),
+   )

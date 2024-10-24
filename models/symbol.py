@@ -16,8 +16,7 @@ class Symbol(CommonModel):
     reports = relationship("Report", back_populates="symbol")
     markets = relationship("Market", back_populates="symbol")
     update_quote = relationship(
-        "UpdateQuote", back_populates="symbol", uselist=False
-    )  # one to one
+        "UpdateQuote", back_populates="symbol")
     major_holders = relationship("MajorHolder", back_populates="symbol")
 
     daily_markets = relationship("DailyMarket", back_populates="symbol")
