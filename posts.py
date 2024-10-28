@@ -193,7 +193,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--total",
         type=int,
-        default=10000,
+        default=1000,
         help="Total number of posts to fetch",  # Total number of posts to fetch
     )
     parser.add_argument("--type", type=int, default=1, help="Type of posts to fetch")
