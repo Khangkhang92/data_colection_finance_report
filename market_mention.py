@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 from getdata.base import Base
 from datetime import date
+from loguru import logger
 
 periods = ["today", "weekly", "monthly"]
 
@@ -17,6 +18,7 @@ all_symbols = base.get_all_symbols()
 
 with ScopedSession() as session:
     for period in periods:
+        logger.info(f"get market mention {period}")
         market_mention_list = []
         FULL_URL = f"{MARKET_MENTION_URL}/{period}"
         base_call_api.base_url = FULL_URL
@@ -63,3 +65,4 @@ with ScopedSession() as session:
 
         session.add_all(market_mention_list)
         session.commit()
+        logger.success(f"{period} is ok")

@@ -1,1 +1,0 @@
-postgresql+psycopg2://superset:superset@localhost:5432/superset
