@@ -15,8 +15,7 @@ class Symbol(CommonModel):
 
     reports = relationship("Report", back_populates="symbol")
     markets = relationship("Market", back_populates="symbol")
-    update_quote = relationship(
-        "UpdateQuote", back_populates="symbol")
+    update_quote = relationship("UpdateQuote", back_populates="symbol")
     major_holders = relationship("MajorHolder", back_populates="symbol")
 
     daily_markets = relationship("DailyMarket", back_populates="symbol")
@@ -28,3 +27,4 @@ class Symbol(CommonModel):
     score = relationship("Score", back_populates="symbol")
     market_mentions = relationship("MarketMention", back_populates="symbol")
     subsidiaries = relationship("Subsidiaries", back_populates="symbol")
+    session_quote = relationship("SessionQuote", back_populates="symbol")

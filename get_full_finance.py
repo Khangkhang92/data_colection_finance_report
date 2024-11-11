@@ -1,5 +1,5 @@
 from sqlalchemy.dialects.postgresql import insert
-from models import  Report, Data
+from models import Report, Data
 from common.db import ScopedSession
 import os
 from loguru import logger
@@ -52,7 +52,7 @@ def update_data_and_get_child(data, item_id):
             children.append(item)
         else:
             new_data.append(item)
-    data[:] = new_data # update data
+    data[:] = new_data  # update data
     return children
 
 
@@ -114,24 +114,21 @@ def save_finance_report(
             children_item=children_item,
         )
 
+
 def save_2_db(data, symbol, report_type):
     with ScopedSession() as session:
         save_finance_report(session, data, symbol, report_type)
+
 
 all_symbol = base_call_api.get_all_symbols()
 logger.info("Retrieved list of symbols")
 start_index = all_symbol.index("A32")
 symbols_to_fetch = all_symbol[start_index:]
 for symbol in symbols_to_fetch:
-    for report_type in (1,2):
+    for report_type in (1, 2):
         logger.info(f"Fetching {REPORT_TYPE.get(report_type)} for {symbol}")
-        params = {
-            "type" : report_type,
-            "year" : 2024,
-            "quarter"  : 3,
-            "limit" : 1
-        }
+        params = {"type": report_type, "year": 2024, "quarter": 3, "limit": 1}
         base_call_api.base_url = f"{FiNANCE_URL2}/{symbol}/full-financial-reports"
         data_list = base_call_api.fetch_posts(params)
         if data_list:
-          save_2_db(data_list, symbol, report_type)
+            save_2_db(data_list, symbol, report_type)

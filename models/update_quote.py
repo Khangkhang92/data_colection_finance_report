@@ -40,6 +40,10 @@ class UpdateQuote(CommonModel):
     total_volume = Column(Float)
     total_value = Column(Float)
     date = Column(Date)
+    buy_count = Column(Float)
+    sell_count = Column(Float)
+    buy_quantity = Column(Float)
+    sell_quantity = Column(Float)
     price_bid1 = Column(Float)
     quantity_bid1 = Column(Float)
     price_bid2 = Column(Float)
@@ -59,7 +63,29 @@ class UpdateQuote(CommonModel):
     def __repr__(self):
         return f"<UpdateQuote(symbol='{self.symbol}', date='{self.date}')>"
 
+    __table_args__ = (
+        UniqueConstraint("symbol_ticker", "date", name="uq_update_quote_symbol_date2"),
+    )
+
+
+class SessionQuote(CommonModel):
+    __tablename__ = "session_quote"
+
+    id = Column(Integer, primary_key=True)
+
+    symbol_ticker = Column(
+        String(length=15), ForeignKey("symbol.ticker"), nullable=False
+    )
+    side = Column(String(3))
+    match_price = Column(Float)
+    volume = Column(Float)
+    total_volume = Column(Float)
+    datetime = Column(DateTime(timezone=True))
+
+    symbol = relationship("Symbol", back_populates="session_quote")
 
     __table_args__ = (
-       UniqueConstraint('symbol_ticker', 'date', name='uq_update_quote_symbol_date2'),
-   )
+        UniqueConstraint(
+            "symbol_ticker", "datetime", name="uq_update_quote_symbol_datetime"
+        ),
+    )
