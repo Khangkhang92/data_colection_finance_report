@@ -18,7 +18,7 @@ def get_all_symbols():
         return session.execute(stmt).scalars().all()
 
 
-with open("data.json", "r", encoding="utf-8") as file:
+with open("data_13112024.json", "r", encoding="utf-8") as file:
     raw_data_list = json.load(file)
 
 data_list = []

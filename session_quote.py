@@ -60,6 +60,9 @@ def upsert_transactions_quotes(symbol_transactions):
         logger.success(f"transactions of {symbol}")
 
 
+# start_index = all_symbols.index("VN30")
+# symbols_to_fetch = all_symbols[start_index:]
+
 for symbol in all_symbols:
     symbol_transactions = base_call_api.fetch_posts({"symbol": symbol})
     logger.info(f"get data for {symbol} ok")
