@@ -10,9 +10,10 @@ from datetime import datetime, timedelta
 base_call_api = Base(os.getenv("SUBSIDIARIES"))
 all_symbols = base_call_api.get_all_symbols()
 
-end_date = datetime.today()
-start_date = end_date - timedelta(days=40)
-limit = 40
+# start_date = datetime.today() - timedelta(days=1)
+start_date = datetime.today() 
+end_date = start_date
+limit = 1
 
 def tranfer_data(history_data):
     return {

@@ -1,10 +1,11 @@
 *.json
+info.sh
 *.png
 __pycache__/
 .ipynb_checkpoints/
-# .env
 backup.sql
 *.dump
 logs/
 markets_data/
 logfile.log
+*.sh
