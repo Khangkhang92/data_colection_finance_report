@@ -117,6 +117,8 @@ def save_finance_report(
 
 def save_2_db(data, symbol, report_type):
     with ScopedSession() as session:
+        if report_type == 4:
+           report_type = 3
         save_finance_report(session, data, symbol, report_type)
 
 
@@ -125,7 +127,7 @@ logger.info("Retrieved list of symbols")
 start_index = all_symbol.index("A32")
 symbols_to_fetch = all_symbol[start_index:]
 for symbol in symbols_to_fetch:
-    for report_type in (1, 2):
+    for report_type in (3, 4):
         logger.info(f"Fetching {REPORT_TYPE.get(report_type)} for {symbol}")
         params = {"type": report_type, "year": 2024, "quarter": 3, "limit": 1}
         base_call_api.base_url = f"{FiNANCE_URL2}/{symbol}/full-financial-reports"

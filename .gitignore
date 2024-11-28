@@ -9,3 +9,4 @@ logs/
 markets_data/
 logfile.log
 *.sh
+*.log

@@ -10,11 +10,10 @@ from datetime import datetime, timedelta
 base_call_api = Base(os.getenv("SUBSIDIARIES"))
 all_symbols = base_call_api.get_all_symbols()
 
-# start_date = datetime.today() - timedelta(days=1)
-start_date = datetime.today() 
-end_date = start_date
-limit = 1
-
+end_date = datetime.today()
+start_date = datetime.today() - timedelta(days=250)
+limit = 250
+print(end_date)
 def tranfer_data(history_data):
     return {
         "symbol_ticker": history_data.get("symbol"),
