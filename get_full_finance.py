@@ -127,9 +127,9 @@ logger.info("Retrieved list of symbols")
 start_index = all_symbol.index("A32")
 symbols_to_fetch = all_symbol[start_index:]
 for symbol in symbols_to_fetch:
-    for report_type in (3, 4):
+    for report_type in (1,2,3,4):
         logger.info(f"Fetching {REPORT_TYPE.get(report_type)} for {symbol}")
-        params = {"type": report_type, "year": 2024, "quarter": 3, "limit": 1}
+        params = {"type": report_type, "year": 2024, "quarter": 4, "limit": 1}
         base_call_api.base_url = f"{FiNANCE_URL2}/{symbol}/full-financial-reports"
         data_list = base_call_api.fetch_posts(params)
         if data_list:
