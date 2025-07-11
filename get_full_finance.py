@@ -96,7 +96,8 @@ def _save_data_entries(session, report_id, values):
 
 def save_finance_report(
     session, data, symbol, report_type, parent_id=None, children_item=None
-):
+):  
+    if report_type == 4: report_type = 3
     items = children_item if children_item is not None else data
     for item in items:
         report_id = _save_report(
@@ -125,9 +126,9 @@ logger.info("Retrieved list of symbols")
 start_index = all_symbol.index("A32")
 symbols_to_fetch = all_symbol[start_index:]
 for symbol in symbols_to_fetch:
-    for report_type in (1, 2):
+    for report_type in (1,2,3,4):
         logger.info(f"Fetching {REPORT_TYPE.get(report_type)} for {symbol}")
-        params = {"type": report_type, "year": 2024, "quarter": 3, "limit": 1}
+        params = {"type": report_type, "year": 2025, "quarter": 1, "limit": 2}
         base_call_api.base_url = f"{FiNANCE_URL2}/{symbol}/full-financial-reports"
         data_list = base_call_api.fetch_posts(params)
         if data_list:

@@ -1,0 +1,86 @@
+2025-05-29 10:39:21.525 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/E1VFVN30/full-financial-reports?type=3&year=2025&quarter=1&limit=2
+2025-05-29 10:39:21.526 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:39:26.414 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/E1VFVN30/full-financial-reports?type=4&year=2025&quarter=1&limit=2
+2025-05-29 10:39:26.415 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:55:40.717 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUCTVGF3/full-financial-reports?type=3&year=2025&quarter=1&limit=2
+2025-05-29 10:55:40.718 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:55:43.527 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUCTVGF3/full-financial-reports?type=4&year=2025&quarter=1&limit=2
+2025-05-29 10:55:43.527 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:55:53.122 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUCTVGF4/full-financial-reports?type=3&year=2025&quarter=1&limit=2
+2025-05-29 10:55:53.123 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:55:55.000 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUCTVGF4/full-financial-reports?type=4&year=2025&quarter=1&limit=2
+2025-05-29 10:55:55.001 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:56:04.291 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUCTVGF5/full-financial-reports?type=3&year=2025&quarter=1&limit=2
+2025-05-29 10:56:04.291 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:56:07.737 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUCTVGF5/full-financial-reports?type=4&year=2025&quarter=1&limit=2
+2025-05-29 10:56:07.737 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:56:20.105 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUCVREIT/full-financial-reports?type=3&year=2025&quarter=1&limit=2
+2025-05-29 10:56:20.105 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:56:23.148 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUCVREIT/full-financial-reports?type=4&year=2025&quarter=1&limit=2
+2025-05-29 10:56:23.149 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:56:34.584 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEABVND/full-financial-reports?type=3&year=2025&quarter=1&limit=2
+2025-05-29 10:56:34.584 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:56:40.312 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEABVND/full-financial-reports?type=4&year=2025&quarter=1&limit=2
+2025-05-29 10:56:40.313 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:56:50.910 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEBFVND/full-financial-reports?type=3&year=2025&quarter=1&limit=2
+2025-05-29 10:56:50.910 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:56:52.361 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEBFVND/full-financial-reports?type=4&year=2025&quarter=1&limit=2
+2025-05-29 10:56:52.361 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:57:05.988 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEDCMID/full-financial-reports?type=3&year=2025&quarter=1&limit=2
+2025-05-29 10:57:05.989 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:57:07.307 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEDCMID/full-financial-reports?type=4&year=2025&quarter=1&limit=2
+2025-05-29 10:57:07.307 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:57:16.668 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEFCV50/full-financial-reports?type=3&year=2025&quarter=1&limit=2
+2025-05-29 10:57:16.669 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:57:17.725 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEFCV50/full-financial-reports?type=4&year=2025&quarter=1&limit=2
+2025-05-29 10:57:17.725 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:57:29.417 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEIP100/full-financial-reports?type=3&year=2025&quarter=1&limit=2
+2025-05-29 10:57:29.417 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:57:30.620 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEIP100/full-financial-reports?type=4&year=2025&quarter=1&limit=2
+2025-05-29 10:57:30.621 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:57:37.462 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEKIV30/full-financial-reports?type=3&year=2025&quarter=1&limit=2
+2025-05-29 10:57:37.463 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:57:41.938 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEKIV30/full-financial-reports?type=4&year=2025&quarter=1&limit=2
+2025-05-29 10:57:41.938 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:57:53.505 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEKIVFS/full-financial-reports?type=3&year=2025&quarter=1&limit=2
+2025-05-29 10:57:53.505 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:57:57.591 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEKIVFS/full-financial-reports?type=4&year=2025&quarter=1&limit=2
+2025-05-29 10:57:57.591 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:58:07.228 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEKIVND/full-financial-reports?type=3&year=2025&quarter=1&limit=2
+2025-05-29 10:58:07.229 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:58:09.594 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEKIVND/full-financial-reports?type=4&year=2025&quarter=1&limit=2
+2025-05-29 10:58:09.594 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:58:18.089 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEMAV30/full-financial-reports?type=3&year=2025&quarter=1&limit=2
+2025-05-29 10:58:18.089 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:58:21.552 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEMAV30/full-financial-reports?type=4&year=2025&quarter=1&limit=2
+2025-05-29 10:58:21.552 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:58:29.047 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEMAVND/full-financial-reports?type=3&year=2025&quarter=1&limit=2
+2025-05-29 10:58:29.048 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:58:30.793 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEMAVND/full-financial-reports?type=4&year=2025&quarter=1&limit=2
+2025-05-29 10:58:30.794 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:58:42.740 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUESSV30/full-financial-reports?type=3&year=2025&quarter=1&limit=2
+2025-05-29 10:58:42.740 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:58:45.755 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUESSV30/full-financial-reports?type=4&year=2025&quarter=1&limit=2
+2025-05-29 10:58:45.755 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:58:55.066 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUESSV50/full-financial-reports?type=3&year=2025&quarter=1&limit=2
+2025-05-29 10:58:55.066 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:59:00.074 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUESSV50/full-financial-reports?type=4&year=2025&quarter=1&limit=2
+2025-05-29 10:59:00.075 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:59:10.849 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUESSVFL/full-financial-reports?type=3&year=2025&quarter=1&limit=2
+2025-05-29 10:59:10.849 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:59:12.579 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUESSVFL/full-financial-reports?type=4&year=2025&quarter=1&limit=2
+2025-05-29 10:59:12.580 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:59:21.887 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEVFVND/full-financial-reports?type=3&year=2025&quarter=1&limit=2
+2025-05-29 10:59:21.888 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:59:26.891 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEVFVND/full-financial-reports?type=4&year=2025&quarter=1&limit=2
+2025-05-29 10:59:26.891 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:59:39.160 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEVN100/full-financial-reports?type=3&year=2025&quarter=1&limit=2
+2025-05-29 10:59:39.160 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 10:59:44.029 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/FUEVN100/full-financial-reports?type=4&year=2025&quarter=1&limit=2
+2025-05-29 10:59:44.029 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 11:19:26.921 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/HC1/full-financial-reports?type=3&year=2025&quarter=1&limit=2
+2025-05-29 11:19:26.923 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 11:19:30.522 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 500 Server Error: Internal Server Error for url: https://api.fireant.vn/symbols/HC1/full-financial-reports?type=4&year=2025&quarter=1&limit=2
+2025-05-29 11:19:30.523 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.
+2025-05-29 14:20:35.192 | ERROR    | getdata.base:fetch_posts:46 - Attempt 1 failed: 503 Server Error: Service Unavailable for url: https://api.fireant.vn/symbols/PVH/full-financial-reports?type=2&year=2025&quarter=1&limit=2
+2025-05-29 14:20:35.192 | ERROR    | getdata.base:fetch_posts:48 - Max retries reached.

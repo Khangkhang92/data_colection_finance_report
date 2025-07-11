@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: public   # <-- sửa thành schema thật, ví dụ: public
+    tables:
+      - name: history_data_processing
+      - name: history_price
+      - name: market
+      - name: symbol
+      - name: temp

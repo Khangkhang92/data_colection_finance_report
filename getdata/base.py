@@ -47,7 +47,7 @@ class Base:
                 if attempt == max_retries - 1:
                     logger.error("Max retries reached.")
                     return None
-                self.random_delay(5, 10)
+                self.random_delay(1, 2)
 
     @lru_cache(maxsize=1)
     def get_all_symbols(self):
