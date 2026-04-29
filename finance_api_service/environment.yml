@@ -1,0 +1,10 @@
+name: finance-api-service
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - -e ../finance_schema_lib
+      - -e .
+      - loguru>=0.7,<1
