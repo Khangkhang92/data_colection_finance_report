@@ -8,6 +8,7 @@ from loguru import logger
 
 from finance_api.api.router import router
 from finance_api.config import get_settings
+from finance_api.jobs import enqueue_bootstrap_jobs
 from finance_api.observability import configure_logging
 
 
@@ -25,6 +26,7 @@ def create_app() -> FastAPI:
             host=settings.api_host,
             port=settings.api_port,
         )
+        enqueue_bootstrap_jobs(settings)
 
     @app.on_event("shutdown")
     def log_shutdown() -> None:

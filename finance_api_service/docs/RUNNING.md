@@ -36,10 +36,10 @@ docker-compose up -d postgres redis
 docker-compose ps
 ```
 
-Mac dinh `.env.example` dung:
+Mac dinh `.env.example` dung cho Docker Compose:
 
 ```text
-DATABASE_URL=postgresql+psycopg2://finance:finance@localhost:5432/finance
+DATABASE_URL=postgresql+psycopg2://finance:finance@postgres:5432/finance
 ```
 
 Gia tri nay khop voi default `POSTGRES_USER`, `POSTGRES_PASSWORD`,
@@ -48,8 +48,16 @@ Gia tri nay khop voi default `POSTGRES_USER`, `POSTGRES_PASSWORD`,
 Redis mac dinh:
 
 ```text
-CELERY_BROKER_URL=redis://localhost:6379/0
-CELERY_RESULT_BACKEND=redis://localhost:6379/1
+CELERY_BROKER_URL=redis://redis:6379/0
+CELERY_RESULT_BACKEND=redis://redis:6379/1
+```
+
+Neu chay trong Docker Compose, khong dung `localhost`. Service noi bo se dung:
+
+```text
+DATABASE_URL=postgresql+psycopg2://finance:finance@postgres:5432/finance
+CELERY_BROKER_URL=redis://redis:6379/0
+CELERY_RESULT_BACKEND=redis://redis:6379/1
 ```
 
 ## 3. Chay Alembic migration
@@ -61,16 +69,16 @@ Service da cau hinh `alembic.ini` de tro vao migrations cua package
 script_location = finance_schema:migrations
 ```
 
-Chay migration:
+Chay migration bang CLI cua `finance-schema`:
 
 ```bash
-python -m alembic upgrade head
+finance-schema upgrade head
 ```
 
 Kiem tra revision hien tai:
 
 ```bash
-python -m alembic current
+finance-schema current -v
 ```
 
 Ket qua dung hien tai:
@@ -121,6 +129,9 @@ Neu chay qua Docker Compose:
 ```bash
 docker-compose up -d api celery-worker celery-beat
 ```
+
+`api` se tu chay `finance-schema upgrade head` truoc khi boot, sau do `worker` va
+`beat` moi noi theo.
 
 ## 6. Kiem tra backend
 

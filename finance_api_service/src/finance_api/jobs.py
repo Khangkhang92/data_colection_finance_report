@@ -7,9 +7,15 @@ from typing import Callable
 from uuid import uuid4
 
 from finance_api.clients import ApiClient
-from finance_api.config import get_settings
+from finance_api.config import Settings, get_settings
 from finance_api.db import session_scope
-from finance_api.schemas import SyncResponse
+from finance_api.schemas import (
+    CompanyDetailsSyncRequest,
+    PostsSyncRequest,
+    SessionQuotesSyncRequest,
+    SymbolsSyncRequest,
+    SyncResponse,
+)
 from finance_api.services.company import CompanyService
 from finance_api.services.finance_report import FinanceStatementService
 from finance_api.services.market import MarketService
@@ -101,6 +107,51 @@ class BackgroundJobManager:
 
 
 job_manager = BackgroundJobManager()
+
+
+def enqueue_bootstrap_jobs(settings: Settings) -> list[JobRecord]:
+    marker_path = settings.bootstrap_run_once_marker_path
+    if not settings.bootstrap_run_all_jobs_on_startup:
+        logger.info("Bootstrap sync disabled bootstrap_run_all_jobs_on_startup=false")
+        return []
+    if marker_path.exists():
+        logger.info("Bootstrap sync skipped marker_exists path={path}", path=marker_path)
+        return []
+
+    logger.info("Bootstrap sync started path={path}", path=marker_path)
+    marker_path.parent.mkdir(parents=True, exist_ok=True)
+    jobs: list[JobRecord] = []
+    bootstrap_specs: list[tuple[str, Callable[[], SyncResponse], str]] = [
+        ("posts_sync", lambda: run_posts_sync(PostsSyncRequest()), "posts_sync"),
+        ("symbols_sync", lambda: run_symbols_sync(SymbolsSyncRequest()), "symbols_sync"),
+        ("finance_statements_sync", run_finance_statements_sync, "finance_statements_sync"),
+        (
+            "company_details_sync",
+            lambda: run_company_details_sync(CompanyDetailsSyncRequest()),
+            "company_details_sync",
+        ),
+        ("market_mentions_sync", run_market_mentions_sync, "market_mentions_sync"),
+        (
+            "session_quotes_sync",
+            lambda: run_session_quotes_sync(SessionQuotesSyncRequest()),
+            "session_quotes_sync",
+        ),
+        ("history_prices_sync", run_history_prices_sync, "history_prices_sync"),
+    ]
+
+    for job_name, runner, dedupe_key in bootstrap_specs:
+        job, deduplicated = job_manager.enqueue(job_name, runner, dedupe_key=dedupe_key)
+        logger.info(
+            "Bootstrap job queued job_name={job_name} job_id={job_id} deduplicated={deduplicated}",
+            job_name=job.job_name,
+            job_id=job.job_id,
+            deduplicated=deduplicated,
+        )
+        jobs.append(job)
+
+    marker_path.write_text(datetime.now(UTC).isoformat(), encoding="utf-8")
+    logger.info("Bootstrap sync finished queued_jobs={count} path={path}", count=len(jobs), path=marker_path)
+    return jobs
 
 
 def run_posts_sync(request) -> SyncResponse:

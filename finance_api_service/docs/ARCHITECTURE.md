@@ -25,10 +25,6 @@ Repository layer
   | upsert
   v
 PostgreSQL
-  ^
-  | optional REST facade
-  |
-PostgREST
 ```
 
 ## Layers

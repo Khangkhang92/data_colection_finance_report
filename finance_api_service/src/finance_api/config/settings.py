@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -22,6 +23,8 @@ class Settings(BaseSettings):
     celery_broker_url: str = "redis://localhost:6379/0"
     celery_result_backend: str = "redis://localhost:6379/1"
     celery_timezone: str = "Asia/Ho_Chi_Minh"
+    bootstrap_run_all_jobs_on_startup: bool = False
+    bootstrap_run_once_marker_path: Path = Path("/tmp/fireant-data-bootstrap.done")
 
     post_url: str | None = Field(default=None, alias="POST")
     post_source_url: str | None = Field(default=None, alias="POST_SOURCE")

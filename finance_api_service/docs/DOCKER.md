@@ -3,7 +3,6 @@
 Stack dev hien tai chay:
 
 - PostgreSQL + TimescaleDB: `timescale/timescaledb:latest-pg17`
-- PostgREST: `postgrest/postgrest:latest`
 - Redis: `redis:8-alpine`
 - FastAPI API: `fireant-api`
 - Celery worker: `fireant-celery-worker`
@@ -14,7 +13,7 @@ Stack dev hien tai chay:
 ```bash
 cd finance_api_service
 cp .env.example .env
-docker-compose up -d postgres postgrest redis api celery-worker celery-beat
+docker-compose up -d postgres redis api celery-worker celery-beat
 ```
 
 ## Service URLs mac dinh
@@ -22,7 +21,6 @@ docker-compose up -d postgres postgrest redis api celery-worker celery-beat
 ```text
 API:         http://localhost:8000/
 Docs:        http://localhost:8000/docs
-PostgREST:   http://localhost:3000/
 Redis:       localhost:6379
 PostgreSQL:  localhost:5432
 ```
@@ -41,12 +39,15 @@ Default credentials local dev:
 finance DB: finance / finance
 ```
 
-PostgREST mac dinh dung:
+Trong network cua Compose, service backend ket noi DB/Redis bang ten service:
 
 ```text
-schema:    public
-anon role: finance
+postgres
+redis
 ```
+
+Vi vay `DATABASE_URL` va `CELERY_BROKER_URL` trong `.env` mau da duoc dat theo
+ten container noi bo, khong dung `localhost`.
 
 ## Celery va Redis
 
@@ -59,6 +60,8 @@ CELERY_RESULT_BACKEND=redis://redis:6379/1
 
 `celery-worker` chay voi `--concurrency=1` de uu tien tinh on dinh cho cac job
 dong bo FireAnt dai va co retry.
+
+`api` tu chay `finance-schema upgrade head` truoc khi boot FastAPI.
 
 ## Reset local data
 

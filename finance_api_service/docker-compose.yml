@@ -17,22 +17,6 @@ services:
       timeout: 5s
       retries: 10
 
-  postgrest:
-    image: postgrest/postgrest:latest
-    container_name: fireant-postgrest
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      PGRST_DB_URI: ${POSTGREST_DB_URI:-postgresql://finance:finance@postgres:5432/finance}
-      PGRST_DB_SCHEMA: ${POSTGREST_DB_SCHEMA:-public}
-      PGRST_DB_ANON_ROLE: ${POSTGREST_DB_ANON_ROLE:-finance}
-      PGRST_SERVER_PORT: 3000
-      PGRST_OPENAPI_SERVER_PROXY_URI: ${POSTGREST_OPENAPI_SERVER_PROXY_URI:-http://localhost:3000}
-    ports:
-      - "${POSTGREST_PORT:-3000}:3000"
-
   redis:
     image: redis:8-alpine
     container_name: fireant-redis
@@ -71,7 +55,7 @@ services:
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/1}
     ports:
       - "${API_PORT:-8000}:8000"
-    command: ["finance-api", "serve"]
+    command: ["/bin/sh", "-lc", "finance-schema upgrade head && finance-api serve"]
 
   celery-worker:
     build:
@@ -91,6 +75,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      api:
+        condition: service_started
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://finance:finance@postgres:5432/finance}
       CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
@@ -123,6 +109,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      api:
+        condition: service_started
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://finance:finance@postgres:5432/finance}
       CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}

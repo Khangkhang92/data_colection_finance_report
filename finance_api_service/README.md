@@ -21,7 +21,7 @@ conda env create -f environment.yml
 conda activate finance-api-service
 cp .env.example .env
 docker-compose up -d postgres redis
-python -m alembic upgrade head
+finance-schema upgrade head
 python -m uvicorn --app-dir src finance_api.app:create_app --factory --reload
 ```
 
@@ -42,7 +42,6 @@ http://localhost:8000/docs
 - Job queue va scheduler: Celery
 - Broker/result backend: Redis
 - Database: PostgreSQL + TimescaleDB
-- REST facade: PostgREST
 - Shared schema/migrations: `finance-schema`
 
 ## Endpoint webhook / manual trigger
