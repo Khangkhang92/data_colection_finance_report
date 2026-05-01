@@ -13,13 +13,61 @@ from finance_schema.models import Symbol
 from loguru import logger
 
 
+NON_REPORT_PREFIXES = ("FUE", "FUC", "E1")
+NON_REPORT_NAME_KEYWORDS = (
+    "quy etf",
+    "quy đầu tư",
+    "quỹ đầu tư",
+    "quy mo",
+    "quỹ mở",
+    "quy dong",
+    "quỹ đóng",
+    "fund",
+    "etf",
+    "index",
+    "chi so",
+    "chỉ số",
+)
+
+
 def get_symbols(session: Session, symbols: list[str] | None = None) -> list[str]:
     if symbols:
-        logger.info("Using symbols from request count={count}", count=len(symbols))
-        return symbols
-    result = list(session.execute(select(Symbol.ticker)).scalars().all())
-    logger.info("Loaded symbols from database count={count}", count=len(result))
+        logger.info(
+            "Ignoring request symbols and loading from database requested_count={count}",
+            count=len(symbols),
+        )
+    result = list(
+        session.execute(select(Symbol.ticker).order_by(Symbol.ticker.asc())).scalars().all()
+    )
+    logger.info("Loaded symbols from database count={count} order=alphabetical", count=len(result))
     return result
+
+
+def is_financial_report_symbol(ticker: str, company_name: str | None) -> bool:
+    upper_ticker = ticker.upper()
+    if upper_ticker.startswith(NON_REPORT_PREFIXES):
+        return False
+
+    normalized_name = (company_name or "").strip().lower()
+    return not any(keyword in normalized_name for keyword in NON_REPORT_NAME_KEYWORDS)
+
+
+def get_financial_report_symbols(session: Session) -> list[str]:
+    rows = session.execute(
+        select(Symbol.ticker, Symbol.company_name).order_by(Symbol.ticker.asc())
+    ).all()
+    symbols = [
+        row.ticker
+        for row in rows
+        if is_financial_report_symbol(row.ticker, row.company_name)
+    ]
+    skipped = len(rows) - len(symbols)
+    logger.info(
+        "Loaded financial-report symbols count={count} skipped_non_company={skipped} order=alphabetical",
+        count=len(symbols),
+        skipped=skipped,
+    )
+    return symbols
 
 
 class SymbolService:

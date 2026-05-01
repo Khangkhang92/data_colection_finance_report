@@ -1,7 +1,7 @@
 # Running the Service
 
 Huong dan nay dung cho local development voi PostgreSQL trong `docker-compose.yml`,
-Alembic migrations tu package `finance_schema_lib`, va backend FastAPI trong
+Alembic migrations tu package `finance-schema`, va backend FastAPI trong
 `finance_api_service`.
 
 ## 1. Chuan bi moi truong
@@ -14,15 +14,20 @@ conda activate finance-api-service
 cp .env.example .env
 ```
 
-`environment.yml` cai editable ca hai package:
+`environment.yml` cai package service editable va `finance-schema` tu GitHub:
 
 ```text
--e ../finance_schema_lib
+finance-schema @ git+https://github.com/Khangkhang92/schema_lib.git@main
 -e .
 ```
 
 Vi vay sau khi tao env, co the dung command `finance-api serve`. Neu chua cai
 editable package trong env hien tai, dung cach dev o muc 4.
+
+Neu dung package release tach rieng tren GitHub, co the cai dependencies bang
+`requirements.release.txt` thay vi editable path local. File nay dang tro toi
+`https://github.com/Khangkhang92/schema_lib.git@main`; khi co tag release, nen
+doi sang `@vX.Y.Z`.
 
 ## 2. Chay PostgreSQL
 
@@ -42,8 +47,8 @@ Gia tri nay khop voi default `POSTGRES_USER`, `POSTGRES_PASSWORD`,
 
 ## 3. Chay Alembic migration
 
-Service da cau hinh `alembic.ini` de tro vao migrations cua
-`finance_schema_lib`:
+Service da cau hinh `alembic.ini` de tro vao migrations cua package
+`finance-schema`:
 
 ```ini
 script_location = finance_schema:migrations
@@ -64,7 +69,7 @@ python -m alembic current
 Ket qua dung hien tai:
 
 ```text
-d05663267564 (head)
+3e9b5d4b1a2c (head)
 ```
 
 ## 4. Chay backend
@@ -100,13 +105,13 @@ http://localhost:8000
 Health check:
 
 ```bash
-curl http://localhost:8000/api/v1/health
+curl http://localhost:8000/fireant_data/health
 ```
 
 Ket qua mong doi:
 
 ```json
-{"status":"ok","service":"finance-api-service"}
+{"status":"ok","service":"fireant-data"}
 ```
 
 OpenAPI docs:
@@ -120,16 +125,98 @@ http://localhost:8000/docs
 Endpoint webhook:
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/webhooks/symbols/sync
+curl -X POST http://localhost:8000/fireant_data/webhooks/symbols/sync
 ```
 
-Mac dinh endpoint lay `ALL_SYMBOL_URL2` va chi upsert instruments co
-`type=stock` vao bang `symbol`, cot khoa chinh `ticker`.
+Response se tra `job_id`, vi sync chay nen:
+
+```json
+{
+  "job_id": "uuid",
+  "job_name": "symbols_sync",
+  "status": "queued",
+  "deduplicated": false,
+  "message": "Symbols sync job accepted"
+}
+```
+
+Kiem tra job:
+
+```bash
+curl http://localhost:8000/fireant_data/jobs/<job_id>
+```
+
+Mac dinh endpoint lay `ALL_SYMBOL_URL2` va chi upsert instruments co `type=stock`
+vao bang `symbol`, cot khoa chinh `ticker`.
 
 Neu muon sync tat ca instruments tu FireAnt:
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/webhooks/symbols/sync \
+curl -X POST http://localhost:8000/fireant_data/webhooks/symbols/sync \
   -H 'Content-Type: application/json' \
   -d '{"instrument_types": null}'
+```
+
+## 7. Sync finance statements
+
+Endpoint nay khong can body. Service se:
+
+- lay ticker tu DB theo thu tu alphabet
+- tu dong suy ra ky bao cao gan nhat theo thoi diem hien tai
+- chi fetch cac batch `symbol + report_type` con thieu du lieu
+- commit theo batch va resume tu dong khi goi lai
+
+Goi job:
+
+```bash
+curl -X POST http://localhost:8000/fireant_data/webhooks/finance-statements/sync
+```
+
+Xem trang thai job:
+
+```bash
+curl http://localhost:8000/fireant_data/jobs/<job_id>
+```
+
+## 8. Sync market mentions
+
+Endpoint nay khong can body. Service se tu dong lay du 3 period:
+
+- `today`
+- `weekly`
+- `monthly`
+
+Goi job:
+
+```bash
+curl -X POST http://localhost:8000/fireant_data/webhooks/market-mentions/sync
+```
+
+## 9. Sync session quotes
+
+Endpoint nay khong can body. Service se:
+
+- lay ticker tu DB theo thu tu alphabet
+- dong bo tung `symbol`
+- commit theo batch tung `symbol`
+
+Goi job:
+
+```bash
+curl -X POST http://localhost:8000/fireant_data/webhooks/session-quotes/sync
+```
+
+## 10. Sync history prices
+
+Endpoint nay khong can body. Service se:
+
+- lay ticker tu DB theo thu tu alphabet
+- mac dinh lay du lieu 1 nam tro lai day
+- neu mot `symbol` da co trong DB thi lay tiep tu `latest_date` cua ma do den hom nay
+- commit theo batch tung `symbol`
+
+Goi job:
+
+```bash
+curl -X POST http://localhost:8000/fireant_data/webhooks/history-prices/sync
 ```

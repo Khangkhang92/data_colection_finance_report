@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 
+from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -13,12 +14,26 @@ class MarketRepository:
     def __init__(self, session: Session) -> None:
         self.session = session
 
+    def get_latest_history_price_date(self, symbol: str) -> date | None:
+        return self.session.execute(
+            select(HistoryPrice.date)
+            .where(HistoryPrice.symbol_ticker == symbol)
+            .order_by(HistoryPrice.date.desc())
+            .limit(1)
+        ).scalar_one_or_none()
+
     def upsert_market_mention(self, row: dict) -> None:
         stmt = insert(MarketMention).values(**row)
-        stmt = stmt.on_conflict_do_update(
-            index_elements=["symbol_ticker", "date"],
-            set_={key: row.get(key) for key in row if key not in {"symbol_ticker", "date"}},
-        )
+        update_values = {key: row.get(key) for key in row if key not in {"symbol_ticker", "date"}}
+        if update_values:
+            stmt = stmt.on_conflict_do_update(
+                index_elements=["symbol_ticker", "date"],
+                set_=update_values,
+            )
+        else:
+            stmt = stmt.on_conflict_do_nothing(
+                index_elements=["symbol_ticker", "date"],
+            )
         self.session.execute(stmt)
 
     def upsert_session_quote(self, raw: dict) -> None:

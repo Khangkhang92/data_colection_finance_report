@@ -20,7 +20,7 @@ class CompanyService:
         fetched = 0
         saved = 0
         errors: list[str] = []
-        symbols = get_symbols(self.session, request.symbols)
+        symbols = get_symbols(self.session)
         logger.info(
             "Company details sync started symbols={symbols} "
             "holders={holders} subsidiaries={subsidiaries}",

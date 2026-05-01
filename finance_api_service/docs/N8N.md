@@ -11,7 +11,7 @@ POST
 URL:
 
 ```text
-http://localhost:8000/api/v1/webhooks/posts/sync
+http://localhost:8000/fireant_data/webhooks/posts/sync
 ```
 
 Body:
@@ -28,11 +28,11 @@ Expected response:
 
 ```json
 {
-  "service": "posts",
-  "status": "ok",
-  "fetched": 100,
-  "saved": 100,
-  "errors": []
+  "job_id": "uuid",
+  "job_name": "posts_sync",
+  "status": "queued",
+  "deduplicated": false,
+  "message": "Posts sync job accepted"
 }
 ```
 
@@ -40,41 +40,49 @@ Expected response:
 
 1. Cron node triggers schedule.
 2. HTTP Request node calls one sync endpoint.
-3. IF node checks `status == "ok"`.
-4. On success, continue downstream workflow.
-5. On error, send notification with `errors`.
+3. Save `job_id` from response.
+4. HTTP Request node calls `GET /fireant_data/jobs/{job_id}`.
+5. IF node checks `status == "completed"` hoac `status == "partial_error"`.
 
 ## Endpoint examples
 
 Sync finance statements:
 
-```json
-{
-  "symbols": ["A32", "AAA"],
-  "report_types": [1, 2],
-  "year": 2024,
-  "quarter": 3,
-  "limit": 1
-}
+Khong can body. Goi:
+
+```text
+POST http://localhost:8000/fireant_data/webhooks/finance-statements/sync
 ```
 
 Sync company details:
 
 ```json
 {
-  "symbols": ["AAA"],
   "include_holders": true,
   "include_subsidiaries": true
 }
 ```
 
+Sync market mentions:
+
+Khong can body. Goi:
+
+```text
+POST http://localhost:8000/fireant_data/webhooks/market-mentions/sync
+```
+
+Sync session quotes:
+
+Khong can body. Goi:
+
+```text
+POST http://localhost:8000/fireant_data/webhooks/session-quotes/sync
+```
+
 Sync history prices:
 
-```json
-{
-  "symbols": ["AAA"],
-  "start_date": "2026-01-01",
-  "end_date": "2026-04-23",
-  "limit": 100
-}
+Khong can body. Goi:
+
+```text
+POST http://localhost:8000/fireant_data/webhooks/history-prices/sync
 ```

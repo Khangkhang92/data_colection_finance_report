@@ -2,9 +2,11 @@ name: finance-api-service
 channels:
   - conda-forge
 dependencies:
-  - python=3.11
+  - python=3.14
   - pip
   - pip:
-      - -e ../finance_schema_lib
+      # Shared schema package installed directly from GitHub.
+      - finance-schema @ git+https://github.com/Khangkhang92/schema_lib.git@main
       - -e .
       - loguru>=0.7,<1
+      - pandas>=2.2,<3

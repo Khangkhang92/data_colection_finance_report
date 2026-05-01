@@ -1,19 +1,21 @@
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-COPY finance_schema_lib /app/finance_schema_lib
-COPY finance_api_service /app/finance_api_service
+ARG FINANCE_SCHEMA_REPO=https://github.com/Khangkhang92/schema_lib.git
+ARG FINANCE_SCHEMA_REF=main
+
+COPY . /app
 
 RUN python -m pip install --no-cache-dir --upgrade pip \
     && python -m pip install --no-cache-dir \
-        -e /app/finance_schema_lib \
-        -e /app/finance_api_service
+        "finance-schema @ git+${FINANCE_SCHEMA_REPO}@${FINANCE_SCHEMA_REF}" \
+        -e /app
 
-WORKDIR /app/finance_api_service
+WORKDIR /app
 
 EXPOSE 8000
 

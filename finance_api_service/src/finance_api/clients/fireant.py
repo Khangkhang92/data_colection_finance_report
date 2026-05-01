@@ -59,15 +59,20 @@ class ApiClient:
                     return response.json()
             except (httpx.HTTPError, ValueError) as exc:
                 last_error = exc
+                error_text = str(exc)
                 logger.warning(
                     "API GET failed url={url} attempt={attempt}/{attempts} error={error}",
                     url=url,
                     attempt=attempt + 1,
                     attempts=attempts,
-                    error=exc,
+                    error=error_text,
                 )
                 if attempt < attempts - 1:
                     time.sleep(self.settings.http_retry_delay_seconds)
 
-        logger.error("API GET exhausted retries url={url} error={error}", url=url, error=last_error)
+        logger.error(
+            "API GET exhausted retries url={url} error={error}",
+            url=url,
+            error=str(last_error) if last_error else "unknown error",
+        )
         raise ApiClientError(f"GET {url} failed: {last_error}")

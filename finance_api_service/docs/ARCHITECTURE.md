@@ -37,7 +37,7 @@ Schema package: `finance-schema` owns SQLAlchemy models and Alembic migrations.
 
 ## Database strategy
 
-The database schema is not duplicated in this project. `finance-api-service` imports models from `finance_schema.models` and uses `finance-schema upgrade head` for migrations.
+The database schema is not duplicated in this project. `fireant-data` imports models from `finance_schema.models` and uses `finance-schema upgrade head` for migrations.
 
 ## n8n strategy
 

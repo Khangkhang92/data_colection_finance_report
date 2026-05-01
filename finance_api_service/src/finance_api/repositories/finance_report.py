@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
@@ -12,6 +14,36 @@ DISPLAY_NAME: dict[str, str] = {}
 class FinanceStatementRepository:
     def __init__(self, session: Session) -> None:
         self.session = session
+
+    def get_latest_period(self, symbol: str, report_type: int) -> tuple[int, int] | None:
+        row = self.session.execute(
+            select(Data.year, Data.quarter)
+            .join(Report, Report.id == Data.report_id)
+            .where(Report.symbol_ticker == symbol, Report.type == report_type)
+            .order_by(Data.year.desc(), Data.quarter.desc())
+            .limit(1)
+        ).first()
+        if row is None:
+            return None
+        return (row.year, row.quarter)
+
+    def get_existing_periods(
+        self,
+        symbol: str,
+        report_type: int,
+        periods: Iterable[tuple[int, int]],
+    ) -> set[tuple[int, int]]:
+        target = set(periods)
+        if not target:
+            return set()
+
+        rows = self.session.execute(
+            select(Data.year, Data.quarter)
+            .join(Report, Report.id == Data.report_id)
+            .where(Report.symbol_ticker == symbol, Report.type == report_type)
+            .distinct()
+        ).all()
+        return {(row.year, row.quarter) for row in rows if (row.year, row.quarter) in target}
 
     def save_report_tree(self, data: list[dict], symbol: str, report_type: int) -> int:
         return self._save_items(data, data, symbol, report_type, parent_id=None)
