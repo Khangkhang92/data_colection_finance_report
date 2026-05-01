@@ -1,15 +1,17 @@
 # fireant-data
 
-Du an API-first de dong bo du lieu FireAnt theo job nen, phuc vu n8n va cac workflow ingestion.
+Du an `FastAPI + Celery + Redis` de dong bo du lieu FireAnt theo job nen va lich dinh ky.
 
 ## Muc tieu
 
 - Moi script cu tro thanh mot service co endpoint kich hoat rieng.
 - API client quan ly tap trung auth, base headers, timeout, retry va error handling.
 - Data duoc clean/transform truoc khi upsert vao PostgreSQL.
-- Response luon la JSON de n8n de goi va xu ly workflow.
+- Response luon la JSON de API client goi va xu ly workflow.
 - Models/migrations dung chung tu package `finance-schema`.
 - Khi `finance-schema` duoc publish rieng, service nay chi can nang version dependency roi chay migration.
+- `Celery` chay worker va scheduler (`beat`) cho cac job dong bo dai.
+- `Redis` dong vai tro broker/result backend cho `Celery`.
 
 ## Chay nhanh bang Miniconda
 
@@ -18,7 +20,7 @@ cd finance_api_service
 conda env create -f environment.yml
 conda activate finance-api-service
 cp .env.example .env
-docker-compose up -d postgres
+docker-compose up -d postgres redis
 python -m alembic upgrade head
 python -m uvicorn --app-dir src finance_api.app:create_app --factory --reload
 ```
@@ -34,7 +36,16 @@ Mo docs:
 http://localhost:8000/docs
 ```
 
-## Endpoint n8n webhook
+## Tech stack
+
+- API: FastAPI
+- Job queue va scheduler: Celery
+- Broker/result backend: Redis
+- Database: PostgreSQL + TimescaleDB
+- REST facade: PostgREST
+- Shared schema/migrations: `finance-schema`
+
+## Endpoint webhook / manual trigger
 
 ```bash
 POST /fireant_data/webhooks/posts/sync
@@ -49,6 +60,35 @@ GET  /fireant_data/jobs/{job_id}
 
 Tat ca endpoint sync deu tra `202 Accepted` va `job_id`. Theo doi tien do qua
 `GET /fireant_data/jobs/{job_id}`.
+
+## Job dinh ky bang Celery
+
+Compose dev stack da co san:
+
+- `api`
+- `celery-worker`
+- `celery-beat`
+- `redis`
+- `postgres`
+Lich mac dinh hien tai:
+
+- `symbols`: 06:00, ngay 02 cua cac thang `01, 04, 07, 10`
+- `company-details`: 06:30, ngay 03 cua cac thang `01, 04, 07, 10`
+- `market-mentions`: 08:00
+- `session-quotes`: 16:15
+- `history-prices`: 17:00
+- `finance-statements`: 19:00, ngay 05 cua cac thang `01, 04, 07, 10`
+
+Mui gio: `Asia/Ho_Chi_Minh`
+
+`finance-statements` duoc chot theo quy, o thang `T+1` sau khi quy ket thuc, de
+giam rui ro keo du lieu qua som khi FireAnt chua cap nhat du.
+
+`symbols` va `company-details` cung duoc chot theo quy de dong bo cung nhip voi
+chu ky cap nhat doanh nghiep.
+
+Luu y: `GET /fireant_data/jobs/{job_id}` chi theo doi cac job duoc enqueue qua
+webhook FastAPI. Cac task dinh ky cua Celery chay doc lap qua Redis backend.
 
 ## Dong bo tu dong
 
@@ -67,6 +107,5 @@ Tat ca endpoint sync deu tra `202 Accepted` va `job_id`. Theo doi tien do qua
 - [docs/RUNNING.md](docs/RUNNING.md)
 - [docs/ALEMBIC.md](docs/ALEMBIC.md)
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- [docs/N8N.md](docs/N8N.md)
 - [docs/DOCKER.md](docs/DOCKER.md)
 - [docs/MIGRATION_PLAN.md](docs/MIGRATION_PLAN.md)

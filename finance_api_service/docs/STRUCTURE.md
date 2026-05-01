@@ -11,12 +11,8 @@ finance_api_service/
 │   ├── ARCHITECTURE.md
 │   ├── DOCKER.md
 │   ├── MIGRATION_PLAN.md
-│   ├── N8N.md
 │   └── STRUCTURE.md
 ├── docker/
-│   └── postgres/
-│       └── init/
-│           └── 001-n8n-database.sh
 ├── docker-compose.yml
 ├── Dockerfile
 ├── scripts/
@@ -34,6 +30,7 @@ finance_api_service/
         ├── clients/
         │   ├── __init__.py
         │   └── fireant.py
+        ├── celery_app.py
         ├── config/
         │   ├── __init__.py
         │   └── settings.py
@@ -85,3 +82,16 @@ Trang thai job duoc doc qua `GET /fireant_data/jobs/{job_id}`.
 
 `finance-statements`, `session-quotes`, `history-prices` deu commit theo batch de
 tranh mat toan bo tien do khi job dai bi dung giua chung.
+
+## Job Dinh Ky
+
+`celery_app.py` dinh nghia Celery app, Redis broker/backend, va lich mac dinh cho:
+
+- `symbols`
+- `company-details`
+- `market-mentions`
+- `session-quotes`
+- `history-prices`
+- `finance-statements`
+
+FastAPI van giu webhook trigger thu cong. Celery phu trach worker va scheduler.

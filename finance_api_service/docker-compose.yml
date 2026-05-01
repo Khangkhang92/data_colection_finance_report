@@ -1,52 +1,141 @@
 services:
   postgres:
-    image: pgvector/pgvector:0.8.2-pg18-trixie
+    image: timescale/timescaledb:latest-pg17
     container_name: finance-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-finance}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-finance}
       POSTGRES_DB: ${POSTGRES_DB:-finance}
-      N8N_DB_USER: ${N8N_DB_USER:-n8n}
-      N8N_DB_PASSWORD: ${N8N_DB_PASSWORD:-n8n}
-      N8N_DB_NAME: ${N8N_DB_NAME:-n8n}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - finance_postgres_data:/var/lib/postgresql
-      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-finance} -d ${POSTGRES_DB:-finance}"]
       interval: 10s
       timeout: 5s
       retries: 10
 
-  n8n:
-    image: n8nio/n8n:latest
-    container_name: finance-n8n
+  postgrest:
+    image: postgrest/postgrest:latest
+    container_name: fireant-postgrest
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      DB_TYPE: postgresdb
-      DB_POSTGRESDB_HOST: postgres
-      DB_POSTGRESDB_PORT: 5432
-      DB_POSTGRESDB_DATABASE: ${N8N_DB_NAME:-n8n}
-      DB_POSTGRESDB_USER: ${N8N_DB_USER:-n8n}
-      DB_POSTGRESDB_PASSWORD: ${N8N_DB_PASSWORD:-n8n}
-      N8N_HOST: 0.0.0.0
-      N8N_PORT: 5678
-      N8N_PROTOCOL: http
-      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-change-me-to-a-long-random-string}
-      WEBHOOK_URL: http://localhost:${N8N_PORT:-5678}/
-      GENERIC_TIMEZONE: Asia/Ho_Chi_Minh
-      TZ: Asia/Ho_Chi_Minh
+      PGRST_DB_URI: ${POSTGREST_DB_URI:-postgresql://finance:finance@postgres:5432/finance}
+      PGRST_DB_SCHEMA: ${POSTGREST_DB_SCHEMA:-public}
+      PGRST_DB_ANON_ROLE: ${POSTGREST_DB_ANON_ROLE:-finance}
+      PGRST_SERVER_PORT: 3000
+      PGRST_OPENAPI_SERVER_PROXY_URI: ${POSTGREST_OPENAPI_SERVER_PROXY_URI:-http://localhost:3000}
     ports:
-      - "${N8N_PORT:-5678}:5678"
+      - "${POSTGREST_PORT:-3000}:3000"
+
+  redis:
+    image: redis:8-alpine
+    container_name: fireant-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
-      - finance_n8n_data:/home/node/.n8n
+      - fireant_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      ssh:
+        - default
+      args:
+        FINANCE_SCHEMA_REPO: ${FINANCE_SCHEMA_REPO:-ssh://git@github.com/Khangkhang92/schema_lib.git}
+        FINANCE_SCHEMA_REF: ${FINANCE_SCHEMA_REF:-main}
+    container_name: fireant-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://finance:finance@postgres:5432/finance}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/1}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    command: ["finance-api", "serve"]
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      ssh:
+        - default
+      args:
+        FINANCE_SCHEMA_REPO: ${FINANCE_SCHEMA_REPO:-ssh://git@github.com/Khangkhang92/schema_lib.git}
+        FINANCE_SCHEMA_REF: ${FINANCE_SCHEMA_REF:-main}
+    container_name: fireant-celery-worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://finance:finance@postgres:5432/finance}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/1}
+    command:
+      [
+        "celery",
+        "-A",
+        "finance_api.celery_app:celery_app",
+        "worker",
+        "--loglevel=INFO",
+        "--concurrency=1"
+      ]
+
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      ssh:
+        - default
+      args:
+        FINANCE_SCHEMA_REPO: ${FINANCE_SCHEMA_REPO:-ssh://git@github.com/Khangkhang92/schema_lib.git}
+        FINANCE_SCHEMA_REF: ${FINANCE_SCHEMA_REF:-main}
+    container_name: fireant-celery-beat
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://finance:finance@postgres:5432/finance}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/1}
+    command:
+      [
+        "celery",
+        "-A",
+        "finance_api.celery_app:celery_app",
+        "beat",
+        "--loglevel=INFO"
+      ]
 
 volumes:
   finance_postgres_data:
-  finance_n8n_data:
+  fireant_redis_data:

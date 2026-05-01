@@ -1,11 +1,15 @@
 # Architecture
 
 ```text
-n8n
+Celery Beat
   |
-  | HTTP JSON
+  | enqueue periodic tasks
   v
-FastAPI routes
+Redis broker <---- FastAPI routes
+  |
+  | dispatch tasks
+  v
+Celery worker
   |
   v
 Service layer
@@ -21,11 +25,19 @@ Repository layer
   | upsert
   v
 PostgreSQL
+  ^
+  | optional REST facade
+  |
+PostgREST
 ```
 
 ## Layers
 
-API layer: FastAPI endpoints, request validation, JSON response.
+API layer: FastAPI endpoints, request validation, manual trigger, JSON response.
+
+Queue layer: Celery tasks and Celery Beat schedules.
+
+Broker layer: Redis for Celery broker and result backend.
 
 Client layer: HTTP auth, headers, timeout, retry, error handling.
 
@@ -39,16 +51,11 @@ Schema package: `finance-schema` owns SQLAlchemy models and Alembic migrations.
 
 The database schema is not duplicated in this project. `fireant-data` imports models from `finance_schema.models` and uses `finance-schema upgrade head` for migrations.
 
-## n8n strategy
+## Scheduling strategy
 
-Every sync job is exposed as an HTTP endpoint. n8n can trigger the endpoint through HTTP Request node and receive a JSON summary:
+Celery Beat la scheduler mac dinh cho cac dong bo dinh ky. Redis giu queue va ket qua trung gian. Celery worker chay cac job dai de tranh block API process.
 
-```json
-{
-  "service": "posts",
-  "status": "ok",
-  "fetched": 100,
-  "saved": 100,
-  "errors": []
-}
-```
+## API strategy
+
+Moi sync job deu co HTTP endpoint rieng de trigger thu cong, quan sat, hoac noi
+vao he thong orchestration ben ngoai khi can.

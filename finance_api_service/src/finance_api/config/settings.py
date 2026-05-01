@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     http_timeout_seconds: float = 30
     http_max_retries: int = 2
     http_retry_delay_seconds: float = 2
+    celery_broker_url: str = "redis://localhost:6379/0"
+    celery_result_backend: str = "redis://localhost:6379/1"
+    celery_timezone: str = "Asia/Ho_Chi_Minh"
 
     post_url: str | None = Field(default=None, alias="POST")
     post_source_url: str | None = Field(default=None, alias="POST_SOURCE")

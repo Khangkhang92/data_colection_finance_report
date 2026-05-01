@@ -5,7 +5,7 @@
 - Reuse old env variable names.
 - Reuse existing database models from `finance-schema`.
 - Recreate old script flows as services.
-- Keep endpoints small and explicit for n8n.
+- Keep endpoints small and explicit for external orchestration or manual triggers.
 
 ## Phase 2: Stabilize data contracts
 

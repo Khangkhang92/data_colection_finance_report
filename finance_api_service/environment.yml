@@ -8,5 +8,7 @@ dependencies:
       # Shared schema package installed directly from GitHub.
       - finance-schema @ git+https://github.com/Khangkhang92/schema_lib.git@main
       - -e .
+      - celery[redis]>=5.4,<6
       - loguru>=0.7,<1
       - pandas>=2.2,<3
+      - redis>=5,<6

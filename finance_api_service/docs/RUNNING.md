@@ -1,8 +1,8 @@
 # Running the Service
 
-Huong dan nay dung cho local development voi PostgreSQL trong `docker-compose.yml`,
-Alembic migrations tu package `finance-schema`, va backend FastAPI trong
-`finance_api_service`.
+Huong dan nay dung cho local development voi `FastAPI + Celery + Redis +
+PostgreSQL` trong `docker-compose.yml`, Alembic migrations tu package
+`finance-schema`, va backend trong `finance_api_service`.
 
 ## 1. Chuan bi moi truong
 
@@ -29,10 +29,10 @@ Neu dung package release tach rieng tren GitHub, co the cai dependencies bang
 `https://github.com/Khangkhang92/schema_lib.git@main`; khi co tag release, nen
 doi sang `@vX.Y.Z`.
 
-## 2. Chay PostgreSQL
+## 2. Chay ha tang local
 
 ```bash
-docker-compose up -d postgres
+docker-compose up -d postgres redis
 docker-compose ps
 ```
 
@@ -44,6 +44,13 @@ DATABASE_URL=postgresql+psycopg2://finance:finance@localhost:5432/finance
 
 Gia tri nay khop voi default `POSTGRES_USER`, `POSTGRES_PASSWORD`,
 `POSTGRES_DB` trong `docker-compose.yml`.
+
+Redis mac dinh:
+
+```text
+CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://localhost:6379/1
+```
 
 ## 3. Chay Alembic migration
 
@@ -100,7 +107,22 @@ Backend se listen tai:
 http://localhost:8000
 ```
 
-## 5. Kiem tra backend
+## 5. Chay Celery worker va scheduler
+
+Neu chay local khong qua Docker:
+
+```bash
+PYTHONPATH=src celery -A finance_api.celery_app:celery_app worker --loglevel=INFO --concurrency=1
+PYTHONPATH=src celery -A finance_api.celery_app:celery_app beat --loglevel=INFO
+```
+
+Neu chay qua Docker Compose:
+
+```bash
+docker-compose up -d api celery-worker celery-beat
+```
+
+## 6. Kiem tra backend
 
 Health check:
 
@@ -120,7 +142,7 @@ OpenAPI docs:
 http://localhost:8000/docs
 ```
 
-## 6. Sync symbols tu FireAnt
+## 7. Sync symbols tu FireAnt
 
 Endpoint webhook:
 
@@ -157,7 +179,7 @@ curl -X POST http://localhost:8000/fireant_data/webhooks/symbols/sync \
   -d '{"instrument_types": null}'
 ```
 
-## 7. Sync finance statements
+## 8. Sync finance statements
 
 Endpoint nay khong can body. Service se:
 
@@ -178,7 +200,7 @@ Xem trang thai job:
 curl http://localhost:8000/fireant_data/jobs/<job_id>
 ```
 
-## 8. Sync market mentions
+## 9. Sync market mentions
 
 Endpoint nay khong can body. Service se tu dong lay du 3 period:
 
@@ -192,7 +214,7 @@ Goi job:
 curl -X POST http://localhost:8000/fireant_data/webhooks/market-mentions/sync
 ```
 
-## 9. Sync session quotes
+## 10. Sync session quotes
 
 Endpoint nay khong can body. Service se:
 
@@ -206,7 +228,7 @@ Goi job:
 curl -X POST http://localhost:8000/fireant_data/webhooks/session-quotes/sync
 ```
 
-## 10. Sync history prices
+## 11. Sync history prices
 
 Endpoint nay khong can body. Service se:
 
@@ -220,3 +242,21 @@ Goi job:
 ```bash
 curl -X POST http://localhost:8000/fireant_data/webhooks/history-prices/sync
 ```
+
+## 12. Lich Celery mac dinh
+
+- `symbols`: 06:00, ngay 02 cua cac thang `01, 04, 07, 10`
+- `company-details`: 06:30, ngay 03 cua cac thang `01, 04, 07, 10`
+- `market-mentions`: 08:00
+- `session-quotes`: 16:15
+- `history-prices`: 17:00
+- `finance-statements`: 19:00, ngay 05 cua cac thang `01, 04, 07, 10`
+
+Mui gio cua scheduler: `Asia/Ho_Chi_Minh`
+
+`finance-statements` duoc lap lich theo quy, o thang `T+1` sau khi quy dong lai.
+
+`symbols` va `company-details` hien cung chay theo quy thay vi hang ngay.
+
+`GET /fireant_data/jobs/{job_id}` chi dung cho cac job webhook do FastAPI
+enqueue. Celery task dinh ky chay doc lap va luu state qua Redis backend.

@@ -2,88 +2,68 @@
 
 Stack dev hien tai chay:
 
-- PostgreSQL + pgvector: `pgvector/pgvector:0.8.2-pg18-trixie`
+- PostgreSQL + TimescaleDB: `timescale/timescaledb:latest-pg17`
 - PostgREST: `postgrest/postgrest:latest`
-- n8n: `n8nio/n8n:latest`
-
-Finance API khong duoc start trong compose dev nay.
+- Redis: `redis:8-alpine`
+- FastAPI API: `fireant-api`
+- Celery worker: `fireant-celery-worker`
+- Celery beat: `fireant-celery-beat`
 
 ## Chay lan dau
 
-May hien tai dang co `docker-compose` v1, nen lenh mac dinh la:
-
 ```bash
 cd finance_api_service
-cp .env.docker.example .env
-docker-compose --env-file .env up -d
+cp .env.example .env
+docker-compose up -d postgres postgrest redis api celery-worker celery-beat
 ```
 
-Neu may khac co Docker Compose v2 thi co the dung:
-
-```bash
-docker compose --env-file .env up -d
-```
-
-## URL mac dinh
+## Service URLs mac dinh
 
 ```text
-n8n:         http://localhost:5678/
+API:         http://localhost:8000/
+Docs:        http://localhost:8000/docs
+PostgREST:   http://localhost:3000/
+Redis:       localhost:6379
 PostgreSQL:  localhost:5432
-PostgREST:   http://localhost:3001/
 ```
 
 ## Database mac dinh
 
-PostgreSQL tao 2 database:
+PostgreSQL tao database:
 
 ```text
 finance  - database cho du lieu finance
-n8n      - database rieng cho n8n
-```
-
-Database `finance` da enable extension:
-
-```sql
-CREATE EXTENSION vector;
 ```
 
 Default credentials local dev:
 
 ```text
 finance DB: finance / finance
-n8n DB:     n8n / n8n
 ```
 
-## Vector DB
-
-Stack nay dung PostgreSQL + `pgvector` lam vector database. PostgREST expose PostgreSQL qua REST, nen n8n co the goi PostgREST de doc/ghi bang vector hoac goi function search vector.
-
-Vi du SQL tao bang embedding:
-
-```sql
-CREATE TABLE documents (
-    id bigserial PRIMARY KEY,
-    content text NOT NULL,
-    embedding vector(1536)
-);
-
-CREATE INDEX documents_embedding_hnsw
-ON documents
-USING hnsw (embedding vector_cosine_ops);
-```
-
-## Ket noi noi bo trong n8n
-
-PostgREST:
+PostgREST mac dinh dung:
 
 ```text
-http://postgrest:3000
+schema:    public
+anon role: finance
 ```
+
+## Celery va Redis
+
+Compose da nap cac bien sau vao `api`, `celery-worker`, `celery-beat`:
+
+```text
+CELERY_BROKER_URL=redis://redis:6379/0
+CELERY_RESULT_BACKEND=redis://redis:6379/1
+```
+
+`celery-worker` chay voi `--concurrency=1` de uu tien tinh on dinh cho cac job
+dong bo FireAnt dai va co retry.
 
 ## Reset local data
 
-Lenh nay xoa toan bo database va data n8n local:
+Lenh nay xoa toan bo database va redis local:
 
 ```bash
-docker-compose --env-file .env down -v
+docker-compose down -v
 ```
