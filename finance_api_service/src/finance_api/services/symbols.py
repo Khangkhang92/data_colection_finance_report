@@ -83,6 +83,7 @@ class SymbolService:
             include_auth=request.include_auth,
         )
         rows = self._extract_rows(raw_rows)
+        rows.sort(key=self._symbol_sort_key)
         allowed_types = set(request.instrument_types or [])
         fetched = len(rows)
         saved = 0
@@ -120,6 +121,11 @@ class SymbolService:
                 "instrument_types": request.instrument_types,
             },
         )
+
+    def _symbol_sort_key(self, raw: dict[str, Any]) -> tuple[str, str]:
+        ticker = str(raw.get("symbol") or raw.get("instrument") or "").upper()
+        exchange = str(raw.get("exchange") or "").upper()
+        return ticker, exchange
 
     def _extract_rows(self, raw_rows: Any) -> list[dict[str, Any]]:
         if isinstance(raw_rows, list):

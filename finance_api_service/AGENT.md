@@ -61,7 +61,7 @@ For host-local development, `localhost` may be used only when running the API
 outside containers.
 
 The Docker build installs `finance-schema` from GitHub via SSH forwarding.
-The server needs a working SSH agent for private repo access.
+The deploy shell must have a working `ssh-agent` and `SSH_AUTH_SOCK`.
 
 ## Data Rules
 

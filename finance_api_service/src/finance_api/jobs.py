@@ -30,8 +30,22 @@ def _celery_app():
     return celery_app
 
 
+TASK_NAMES: dict[str, str] = {
+    "posts_sync": "finance_api.posts",
+    "symbols_sync": "finance_api.sync_symbols",
+    "finance_statements_sync": "finance_api.sync_finance_statements",
+    "company_details_sync": "finance_api.sync_company_details",
+    "market_mentions_sync": "finance_api.sync_market_mentions",
+    "session_quotes_sync": "finance_api.sync_session_quotes",
+    "history_prices_sync": "finance_api.sync_history_prices",
+}
+
+
 def _task_name(job_name: str) -> str:
-    return f"finance_api.{job_name.removesuffix('_sync')}"
+    try:
+        return TASK_NAMES[job_name]
+    except KeyError as exc:
+        raise ValueError(f"Unknown sync job name: {job_name}") from exc
 
 
 def enqueue_job(
