@@ -81,15 +81,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://finance:finance@postgres:5432/finance}
       CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/1}
-    command:
-      [
-        "celery",
-        "-A",
-        "finance_api.celery_app:celery_app",
-        "worker",
-        "--loglevel=INFO",
-        "--concurrency=${CELERY_WORKER_CONCURRENCY:-1}"
-      ]
+    command: ["/bin/sh", "/app/scripts/start-celery-worker.sh"]
 
   celery-beat:
     build:
@@ -122,6 +114,36 @@ services:
         "finance_api.celery_app:celery_app",
         "beat",
         "--loglevel=INFO"
+      ]
+
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      ssh:
+        - default
+      args:
+        FINANCE_SCHEMA_REPO: ${FINANCE_SCHEMA_REPO:-ssh://git@github.com/Khangkhang92/schema_lib.git}
+        FINANCE_SCHEMA_REF: ${FINANCE_SCHEMA_REF:-main}
+    container_name: fireant-flower
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_started
+    environment:
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/1}
+    ports:
+      - "${FLOWER_PORT:-5555}:5555"
+    command:
+      [
+        "/bin/sh",
+        "-lc",
+        "celery -A finance_api.celery_app:celery_app flower --address=0.0.0.0 --port=5555 ${FLOWER_BASIC_AUTH:+--basic_auth=$FLOWER_BASIC_AUTH}"
       ]
 
 volumes:

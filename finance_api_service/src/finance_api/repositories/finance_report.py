@@ -45,23 +45,32 @@ class FinanceStatementRepository:
         ).all()
         return {(row.year, row.quarter) for row in rows if (row.year, row.quarter) in target}
 
-    def save_report_tree(self, data: list[dict], symbol: str, report_type: int) -> int:
-        return self._save_items(data, data, symbol, report_type, parent_id=None)
+    def has_missing_parent_links(self, symbol: str, report_type: int) -> bool:
+        row = self.session.execute(
+            select(Report.id)
+            .where(
+                Report.symbol_ticker == symbol,
+                Report.type == report_type,
+                Report.lever > 1,
+                Report.parent_id.is_(None),
+            )
+            .limit(1)
+        ).first()
+        return row is not None
 
-    def _save_items(
-        self,
-        all_items: list[dict],
-        items: list[dict],
-        symbol: str,
-        report_type: int,
-        parent_id: int | None,
-    ) -> int:
+    def save_report_tree(self, data: list[dict], symbol: str, report_type: int) -> int:
+        items = self._flatten_items(data)
+        items.sort(key=self._item_sort_key)
+
         saved = 0
-        for item in list(items):
+        report_ids_by_source_id: dict[int, int] = {}
+        for item in items:
+            parent_id = self._resolve_parent_id(item, report_ids_by_source_id)
             report_id = self._upsert_report(symbol, report_type, item, parent_id)
+            source_id = item.get("id")
+            if isinstance(source_id, int):
+                report_ids_by_source_id[source_id] = report_id
             saved += self._upsert_values(report_id, item.get("values") or [])
-            children = self._extract_children(all_items, item)
-            saved += self._save_items(all_items, children, symbol, report_type, report_id)
         return saved
 
     def _upsert_report(
@@ -115,14 +124,35 @@ class FinanceStatementRepository:
             saved += 1
         return saved
 
-    def _extract_children(self, data: list[dict], item: dict) -> list[dict]:
-        item_id = item.get("id")
-        children: list[dict] = []
-        rest: list[dict] = []
-        for candidate in data:
-            if candidate.get("parentID") == item_id:
-                children.append(candidate)
-            else:
-                rest.append(candidate)
-        data[:] = rest
-        return children
+    def _flatten_items(self, data: list[dict]) -> list[dict]:
+        items: list[dict] = []
+        stack = list(data)
+        while stack:
+            item = stack.pop(0)
+            if not isinstance(item, dict):
+                continue
+            items.append(item)
+            children = item.get("children")
+            if isinstance(children, list):
+                stack.extend(child for child in children if isinstance(child, dict))
+        return items
+
+    def _resolve_parent_id(
+        self,
+        item: dict,
+        report_ids_by_source_id: dict[int, int],
+    ) -> int | None:
+        parent_source_id = item.get("parentID")
+        if not isinstance(parent_source_id, int) or parent_source_id < 0:
+            return None
+        return report_ids_by_source_id.get(parent_source_id)
+
+    def _item_sort_key(self, item: dict) -> tuple[int, int, str]:
+        level = item.get("level")
+        source_id = item.get("id")
+        name = item.get("name")
+        return (
+            level if isinstance(level, int) else 0,
+            source_id if isinstance(source_id, int) else 0,
+            str(name or ""),
+        )

@@ -120,14 +120,18 @@ http://localhost:8000
 Neu chay local khong qua Docker:
 
 ```bash
-PYTHONPATH=src celery -A finance_api.celery_app:celery_app worker --loglevel=INFO --concurrency=1
+PYTHONPATH=src CELERY_WORKER_CONCURRENCY_MODE=io ./scripts/start-celery-worker.sh
 PYTHONPATH=src celery -A finance_api.celery_app:celery_app beat --loglevel=INFO
 ```
+
+Worker tu tinh concurrency neu khong set `CELERY_WORKER_CONCURRENCY`:
+`cpu` = so core CPU, `io` = so core CPU * 2. Set `CELERY_WORKER_CONCURRENCY`
+neu muon ep mot gia tri cu the.
 
 Neu chay qua Docker Compose:
 
 ```bash
-docker-compose up -d api celery-worker celery-beat
+docker-compose up -d api celery-worker celery-beat flower
 ```
 
 `api` se tu chay `finance-schema upgrade head` truoc khi boot, sau do `worker` va
@@ -135,6 +139,18 @@ docker-compose up -d api celery-worker celery-beat
 
 Webhook API khong tu xu ly long task. Moi endpoint sync chi enqueue task vao
 Celery, worker moi la noi thuc thi business job.
+
+Flower monitor task/worker tai:
+
+```text
+http://localhost:5555
+```
+
+Neu can auth co the set:
+
+```text
+FLOWER_BASIC_AUTH=user:pass
+```
 
 ## 6. Kiem tra backend
 

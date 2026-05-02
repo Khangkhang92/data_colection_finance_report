@@ -33,6 +33,9 @@ API endpoints must not run long sync jobs directly. They enqueue Celery tasks
 and return `202 Accepted`.
 
 Celery worker is responsible for all heavy sync work.
+Worker concurrency is configured through `scripts/start-celery-worker.sh`.
+Leave `CELERY_WORKER_CONCURRENCY` empty for auto sizing, then choose
+`CELERY_WORKER_CONCURRENCY_MODE=cpu` or `io`.
 
 Celery Beat is responsible for scheduled sync jobs.
 

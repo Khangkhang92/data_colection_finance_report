@@ -1,6 +1,7 @@
 # fireant-data
 
 Du an `FastAPI + Celery + Redis` de dong bo du lieu FireAnt theo job nen va lich dinh ky.
+`Flower` duoc them vao Compose de monitor worker va task.
 
 ## Muc tieu
 
@@ -12,6 +13,7 @@ Du an `FastAPI + Celery + Redis` de dong bo du lieu FireAnt theo job nen va lich
 - Khi `finance-schema` duoc publish rieng, service nay chi can nang version dependency roi chay migration.
 - `Celery` chay worker va scheduler (`beat`) cho cac job dong bo dai.
 - `Redis` dong vai tro broker/result backend cho `Celery`.
+- `Flower` monitor worker, queue va task state.
 
 ## Chay nhanh bang Miniconda
 
@@ -68,6 +70,7 @@ Compose dev stack da co san:
 - `api`
 - `celery-worker`
 - `celery-beat`
+- `flower`
 - `redis`
 - `postgres`
 Lich mac dinh hien tai:
@@ -88,6 +91,11 @@ giam rui ro keo du lieu qua som khi FireAnt chua cap nhat du.
 chu ky cap nhat doanh nghiep.
 
 Ca webhook API va Celery Beat deu day task vao worker theo cung mot co che.
+Worker tu tinh concurrency theo CPU neu `CELERY_WORKER_CONCURRENCY` de rong:
+`CELERY_WORKER_CONCURRENCY_MODE=cpu` dung so core CPU, con `io` dung `CPU * 2`
+cho cac job cho HTTP/DB nhieu.
+
+Flower mac dinh mo tai `http://localhost:5555`.
 
 ## Dong bo tu dong
 
