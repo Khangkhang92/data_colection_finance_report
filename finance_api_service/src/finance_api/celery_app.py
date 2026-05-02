@@ -9,10 +9,18 @@ from finance_api.jobs import (
     run_finance_statements_sync,
     run_history_prices_sync,
     run_market_mentions_sync,
+    run_posts_sync,
     run_session_quotes_sync,
     run_symbols_sync,
 )
-from finance_api.schemas.requests import CompanyDetailsSyncRequest, SymbolsSyncRequest
+from finance_api.schemas.requests import (
+    CompanyDetailsSyncRequest,
+    HistoryPricesSyncRequest,
+    MarketMentionsSyncRequest,
+    PostsSyncRequest,
+    SessionQuotesSyncRequest,
+    SymbolsSyncRequest,
+)
 
 
 settings = get_settings()
@@ -31,6 +39,7 @@ celery_app.conf.update(
     accept_content=["json"],
     worker_prefetch_multiplier=1,
     task_acks_late=True,
+    task_track_started=True,
     beat_schedule={
         # Dong bo danh muc symbol theo quy, o thang T+1 sau khi quy ket thuc.
         # Chay luc 06:00, ngay 02 cua cac thang 01, 04, 07, 10.
@@ -49,13 +58,13 @@ celery_app.conf.update(
         # 08:00 Asia/Ho_Chi_Minh.
         "sync-market-mentions-daily": {
             "task": "finance_api.sync_market_mentions",
-            "schedule": crontab(hour=21, minute=0),
+            "schedule": crontab(hour=8, minute=0),
         },
         # Session quotes nen chay sau khi phien giao dich trong ngay da on dinh.
         # 16:15 Asia/Ho_Chi_Minh.
         "sync-session-quotes-daily": {
             "task": "finance_api.sync_session_quotes",
-            "schedule": crontab(hour=21, minute=15),
+            "schedule": crontab(hour=16, minute=15),
         },
         # History prices duoc resume theo latest_date trong DB,
         # vi vay chot lich cuoi ngay la hop ly nhat.
@@ -71,8 +80,8 @@ celery_app.conf.update(
         # - Q2 nam hien tai -> thang 07
         # - Q3 nam hien tai -> thang 10
         #
-        # Chot vao ngay 05 luc 19:00 Asia/Ho_Chi_Minh de tranh lay qua som
-        # khi doanh nghiep va FireAnt chua cap nhat du du lieu ngay dau thang.
+        # Chot vao ngay 15 luc 19:00 Asia/Ho_Chi_Minh de giam rui ro
+        # keo qua som khi doanh nghiep va FireAnt chua cap nhat du.
         "sync-finance-statements-quarterly": {
             "task": "finance_api.sync_finance_statements",
             "schedule": crontab(month_of_year="1,4,7,10", day_of_month=15, hour=19, minute=0),
@@ -81,32 +90,42 @@ celery_app.conf.update(
 )
 
 
+@celery_app.task(name="finance_api.posts")
+def sync_posts_task(payload: dict | None = None) -> dict:
+    request = PostsSyncRequest(**(payload or {}))
+    return run_posts_sync(request).model_dump(mode="json")
+
+
 @celery_app.task(name="finance_api.sync_symbols")
-def sync_symbols_task() -> dict:
-    return run_symbols_sync(SymbolsSyncRequest()).model_dump(mode="json")
+def sync_symbols_task(payload: dict | None = None) -> dict:
+    request = SymbolsSyncRequest(**(payload or {}))
+    return run_symbols_sync(request).model_dump(mode="json")
 
 
 @celery_app.task(name="finance_api.sync_company_details")
-def sync_company_details_task() -> dict:
-    request = CompanyDetailsSyncRequest(include_holders=True, include_subsidiaries=True)
+def sync_company_details_task(payload: dict | None = None) -> dict:
+    request = CompanyDetailsSyncRequest(**(payload or {}))
     return run_company_details_sync(request).model_dump(mode="json")
 
 
 @celery_app.task(name="finance_api.sync_market_mentions")
-def sync_market_mentions_task() -> dict:
-    return run_market_mentions_sync().model_dump(mode="json")
+def sync_market_mentions_task(payload: dict | None = None) -> dict:
+    request = MarketMentionsSyncRequest(**(payload or {}))
+    return run_market_mentions_sync(request).model_dump(mode="json")
 
 
 @celery_app.task(name="finance_api.sync_session_quotes")
-def sync_session_quotes_task() -> dict:
-    return run_session_quotes_sync(None).model_dump(mode="json")
+def sync_session_quotes_task(payload: dict | None = None) -> dict:
+    request = SessionQuotesSyncRequest(**(payload or {}))
+    return run_session_quotes_sync(request).model_dump(mode="json")
 
 
 @celery_app.task(name="finance_api.sync_history_prices")
-def sync_history_prices_task() -> dict:
-    return run_history_prices_sync().model_dump(mode="json")
+def sync_history_prices_task(payload: dict | None = None) -> dict:
+    request = HistoryPricesSyncRequest(**(payload or {}))
+    return run_history_prices_sync(request).model_dump(mode="json")
 
 
 @celery_app.task(name="finance_api.sync_finance_statements")
-def sync_finance_statements_task() -> dict:
+def sync_finance_statements_task(payload: dict | None = None) -> dict:
     return run_finance_statements_sync().model_dump(mode="json")

@@ -56,10 +56,11 @@ Compose da nap cac bien sau vao `api`, `celery-worker`, `celery-beat`:
 ```text
 CELERY_BROKER_URL=redis://redis:6379/0
 CELERY_RESULT_BACKEND=redis://redis:6379/1
+CELERY_WORKER_CONCURRENCY=1
 ```
 
-`celery-worker` chay voi `--concurrency=1` de uu tien tinh on dinh cho cac job
-dong bo FireAnt dai va co retry.
+`celery-worker` mac dinh chay voi `--concurrency=1` de uu tien tinh on dinh cho
+cac job dong bo FireAnt dai va co retry. Co the tang bang `.env` neu can.
 
 `api` tu chay `finance-schema upgrade head` truoc khi boot FastAPI.
 

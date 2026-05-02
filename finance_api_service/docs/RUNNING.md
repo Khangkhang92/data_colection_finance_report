@@ -133,6 +133,9 @@ docker-compose up -d api celery-worker celery-beat
 `api` se tu chay `finance-schema upgrade head` truoc khi boot, sau do `worker` va
 `beat` moi noi theo.
 
+Webhook API khong tu xu ly long task. Moi endpoint sync chi enqueue task vao
+Celery, worker moi la noi thuc thi business job.
+
 ## 6. Kiem tra backend
 
 Health check:
@@ -261,7 +264,7 @@ curl -X POST http://localhost:8000/fireant_data/webhooks/history-prices/sync
 - `market-mentions`: 08:00
 - `session-quotes`: 16:15
 - `history-prices`: 17:00
-- `finance-statements`: 19:00, ngay 05 cua cac thang `01, 04, 07, 10`
+- `finance-statements`: 19:00, ngay 15 cua cac thang `01, 04, 07, 10`
 
 Mui gio cua scheduler: `Asia/Ho_Chi_Minh`
 
@@ -269,5 +272,5 @@ Mui gio cua scheduler: `Asia/Ho_Chi_Minh`
 
 `symbols` va `company-details` hien cung chay theo quy thay vi hang ngay.
 
-`GET /fireant_data/jobs/{job_id}` chi dung cho cac job webhook do FastAPI
-enqueue. Celery task dinh ky chay doc lap va luu state qua Redis backend.
+`GET /fireant_data/jobs/{job_id}` doc state tu Celery backend. Ca webhook API
+va Celery Beat deu day task vao worker theo cung mot co che.

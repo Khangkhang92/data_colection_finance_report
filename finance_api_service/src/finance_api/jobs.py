@@ -2,15 +2,19 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from threading import Lock, Thread
-from typing import Callable
-from uuid import uuid4
+from pathlib import Path
+from threading import Lock
+from typing import Any
+
+from celery.result import AsyncResult
 
 from finance_api.clients import ApiClient
 from finance_api.config import Settings, get_settings
 from finance_api.db import session_scope
 from finance_api.schemas import (
     CompanyDetailsSyncRequest,
+    HistoryPricesSyncRequest,
+    MarketMentionsSyncRequest,
     PostsSyncRequest,
     SessionQuotesSyncRequest,
     SymbolsSyncRequest,
@@ -37,80 +41,107 @@ class JobRecord:
     meta: dict[str, str] = field(default_factory=dict)
 
 
-class BackgroundJobManager:
+class JobRegistry:
     def __init__(self) -> None:
         self._jobs: dict[str, JobRecord] = {}
         self._lock = Lock()
 
-    def enqueue(
-        self,
-        job_name: str,
-        runner: Callable[[], SyncResponse],
-        *,
-        dedupe_key: str | None = None,
-    ) -> tuple[JobRecord, bool]:
-        with self._lock:
-            for job in self._jobs.values():
-                if (
-                    dedupe_key
-                    and job.meta.get("dedupe_key") == dedupe_key
-                    and job.status in {"queued", "running"}
-                ):
-                    return job, True
-
-            job = JobRecord(
-                job_id=str(uuid4()),
-                job_name=job_name,
-                status="queued",
-                created_at=datetime.now(UTC),
-                meta={"dedupe_key": dedupe_key or job_name},
-            )
-            self._jobs[job.job_id] = job
-
-        thread = Thread(
-            target=self._run_job,
-            args=(job.job_id, runner),
-            name=f"finance-job-{job_name}",
-            daemon=True,
+    def register(self, job_id: str, job_name: str, *, meta: dict[str, str] | None = None) -> JobRecord:
+        record = JobRecord(
+            job_id=job_id,
+            job_name=job_name,
+            status="queued",
+            created_at=datetime.now(UTC),
+            meta=meta or {},
         )
-        thread.start()
-        return job, False
+        with self._lock:
+            self._jobs[job_id] = record
+        return record
 
     def get(self, job_id: str) -> JobRecord | None:
         with self._lock:
             return self._jobs.get(job_id)
 
-    def _run_job(self, job_id: str, runner: Callable[[], SyncResponse]) -> None:
-        with self._lock:
-            job = self._jobs[job_id]
-            job.status = "running"
-            job.started_at = datetime.now(UTC)
 
-        try:
-            logger.info("Background job started job_id={job_id} job_name={job_name}", job_id=job.job_id, job_name=job.job_name)
-            result = runner()
-        except Exception as exc:
-            logger.exception("Background job failed job_id={job_id} job_name={job_name}", job_id=job.job_id, job_name=job.job_name)
-            with self._lock:
-                job = self._jobs[job_id]
-                job.status = "failed"
-                job.error = str(exc)
-                job.finished_at = datetime.now(UTC)
-            return
-
-        with self._lock:
-            job = self._jobs[job_id]
-            job.status = "completed" if result.status == "ok" else "partial_error"
-            job.result = result
-            job.finished_at = datetime.now(UTC)
-        logger.info("Background job finished job_id={job_id} job_name={job_name} status={status}", job_id=job.job_id, job_name=job.job_name, status=job.status)
+job_registry = JobRegistry()
 
 
-job_manager = BackgroundJobManager()
+def _celery_app():
+    from finance_api.celery_app import celery_app
+
+    return celery_app
+
+
+def _task_name(job_name: str) -> str:
+    return f"finance_api.{job_name.removesuffix('_sync')}"
+
+
+def enqueue_job(
+    job_name: str,
+    payload: dict[str, Any] | None = None,
+    *,
+    meta: dict[str, str] | None = None,
+) -> JobRecord:
+    task_name = _task_name(job_name)
+    async_result = _celery_app().send_task(task_name, kwargs={"payload": payload or {}})
+    return job_registry.register(async_result.id, job_name, meta=meta)
+
+
+def get_job(job_id: str) -> JobRecord | None:
+    record = job_registry.get(job_id)
+    async_result = AsyncResult(job_id, app=_celery_app())
+    if record is None:
+        if async_result.state == "PENDING":
+            return None
+        record = JobRecord(
+            job_id=job_id,
+            job_name="unknown",
+            status="queued",
+            created_at=datetime.now(UTC),
+        )
+
+    state = async_result.state
+    status = "queued"
+    started_at = record.started_at
+    finished_at = record.finished_at
+    error = record.error
+    result_payload = record.result
+
+    if state == "STARTED":
+        status = "running"
+        started_at = started_at or datetime.now(UTC)
+    elif state == "SUCCESS":
+        raw_result = async_result.result or {}
+        result_payload = SyncResponse(**raw_result) if isinstance(raw_result, dict) else None
+        status = "completed" if result_payload is None or result_payload.status == "ok" else "partial_error"
+        started_at = started_at or record.created_at
+        finished_at = finished_at or datetime.now(UTC)
+    elif state == "FAILURE":
+        status = "failed"
+        started_at = started_at or record.created_at
+        finished_at = finished_at or datetime.now(UTC)
+        error = str(async_result.result)
+    elif state == "PENDING":
+        status = "queued"
+    else:
+        status = "running"
+        started_at = started_at or datetime.now(UTC)
+
+    return JobRecord(
+        job_id=record.job_id,
+        job_name=record.job_name,
+        status=status,
+        created_at=record.created_at,
+        started_at=started_at,
+        finished_at=finished_at,
+        error=error,
+        result=result_payload,
+        meta=record.meta,
+    )
 
 
 def enqueue_bootstrap_jobs(settings: Settings) -> list[JobRecord]:
-    marker_path = settings.bootstrap_run_once_marker_path
+    marker_path: Path = settings.bootstrap_run_once_marker_path
     if not settings.bootstrap_run_all_jobs_on_startup:
         logger.info("Bootstrap sync disabled bootstrap_run_all_jobs_on_startup=false")
         return []
@@ -120,33 +151,19 @@ def enqueue_bootstrap_jobs(settings: Settings) -> list[JobRecord]:
 
     logger.info("Bootstrap sync started path={path}", path=marker_path)
     marker_path.parent.mkdir(parents=True, exist_ok=True)
-    jobs: list[JobRecord] = []
-    bootstrap_specs: list[tuple[str, Callable[[], SyncResponse], str]] = [
-        ("posts_sync", lambda: run_posts_sync(PostsSyncRequest()), "posts_sync"),
-        ("symbols_sync", lambda: run_symbols_sync(SymbolsSyncRequest()), "symbols_sync"),
-        ("finance_statements_sync", run_finance_statements_sync, "finance_statements_sync"),
-        (
-            "company_details_sync",
-            lambda: run_company_details_sync(CompanyDetailsSyncRequest()),
-            "company_details_sync",
-        ),
-        ("market_mentions_sync", run_market_mentions_sync, "market_mentions_sync"),
-        (
-            "session_quotes_sync",
-            lambda: run_session_quotes_sync(SessionQuotesSyncRequest()),
-            "session_quotes_sync",
-        ),
-        ("history_prices_sync", run_history_prices_sync, "history_prices_sync"),
+    bootstrap_specs: list[tuple[str, dict[str, Any]]] = [
+        ("posts_sync", PostsSyncRequest().model_dump(mode="json")),
+        ("symbols_sync", SymbolsSyncRequest().model_dump(mode="json")),
+        ("finance_statements_sync", {}),
+        ("company_details_sync", CompanyDetailsSyncRequest().model_dump(mode="json")),
+        ("market_mentions_sync", MarketMentionsSyncRequest().model_dump(mode="json")),
+        ("session_quotes_sync", SessionQuotesSyncRequest().model_dump(mode="json")),
+        ("history_prices_sync", HistoryPricesSyncRequest().model_dump(mode="json")),
     ]
-
-    for job_name, runner, dedupe_key in bootstrap_specs:
-        job, deduplicated = job_manager.enqueue(job_name, runner, dedupe_key=dedupe_key)
-        logger.info(
-            "Bootstrap job queued job_name={job_name} job_id={job_id} deduplicated={deduplicated}",
-            job_name=job.job_name,
-            job_id=job.job_id,
-            deduplicated=deduplicated,
-        )
+    jobs: list[JobRecord] = []
+    for job_name, payload in bootstrap_specs:
+        job = enqueue_job(job_name, payload, meta={"bootstrap": "true"})
+        logger.info("Bootstrap job queued job_name={job_name} job_id={job_id}", job_name=job_name, job_id=job.job_id)
         jobs.append(job)
 
     marker_path.write_text(datetime.now(UTC).isoformat(), encoding="utf-8")
@@ -154,7 +171,7 @@ def enqueue_bootstrap_jobs(settings: Settings) -> list[JobRecord]:
     return jobs
 
 
-def run_posts_sync(request) -> SyncResponse:
+def run_posts_sync(request: PostsSyncRequest) -> SyncResponse:
     settings = get_settings()
     client = ApiClient(settings)
     with session_scope() as session:
@@ -168,35 +185,37 @@ def run_finance_statements_sync() -> SyncResponse:
         return FinanceStatementService(settings, client, session).sync()
 
 
-def run_company_details_sync(request) -> SyncResponse:
+def run_company_details_sync(request: CompanyDetailsSyncRequest) -> SyncResponse:
     settings = get_settings()
     client = ApiClient(settings)
     with session_scope() as session:
         return CompanyService(settings, client, session).sync(request)
 
 
-def run_symbols_sync(request) -> SyncResponse:
+def run_symbols_sync(request: SymbolsSyncRequest) -> SyncResponse:
     settings = get_settings()
     client = ApiClient(settings)
     with session_scope() as session:
         return SymbolService(settings, client, session).sync(request)
 
 
-def run_market_mentions_sync(request=None) -> SyncResponse:
+def run_market_mentions_sync(request: MarketMentionsSyncRequest | None = None) -> SyncResponse:
     settings = get_settings()
     client = ApiClient(settings)
     with session_scope() as session:
         return MarketService(settings, client, session).sync_mentions(request)
 
 
-def run_session_quotes_sync(request) -> SyncResponse:
+def run_session_quotes_sync(request: SessionQuotesSyncRequest | None = None) -> SyncResponse:
     settings = get_settings()
     client = ApiClient(settings)
     with session_scope() as session:
-        return MarketService(settings, client, session).sync_session_quotes(request)
+        return MarketService(settings, client, session).sync_session_quotes(
+            request or SessionQuotesSyncRequest()
+        )
 
 
-def run_history_prices_sync(request=None) -> SyncResponse:
+def run_history_prices_sync(request: HistoryPricesSyncRequest | None = None) -> SyncResponse:
     settings = get_settings()
     client = ApiClient(settings)
     with session_scope() as session:

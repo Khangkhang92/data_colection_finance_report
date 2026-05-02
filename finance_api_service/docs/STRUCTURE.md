@@ -1,26 +1,33 @@
 # Project Structure
 
+`fireant-data` la service dong bo du lieu FireAnt. API chi nhan trigger va
+enqueue task vao Celery; worker moi la noi chay cac job ton thoi gian.
+
 ```text
 finance_api_service/
+├── AGENT.md
 ├── .env.example
 ├── .gitignore
+├── Dockerfile
 ├── README.md
+├── docker-compose.yml
 ├── environment.yml
 ├── pyproject.toml
+├── requirements.txt
+├── requirements.release.txt
 ├── docs/
+│   ├── ALEMBIC.md
 │   ├── ARCHITECTURE.md
 │   ├── DOCKER.md
 │   ├── MIGRATION_PLAN.md
+│   ├── RUNNING.md
 │   └── STRUCTURE.md
-├── docker/
-├── docker-compose.yml
-├── Dockerfile
-├── scripts/
-├── tests/
 └── src/
     └── finance_api/
         ├── __init__.py
         ├── app.py
+        ├── celery_app.py
+        ├── jobs.py
         ├── main.py
         ├── api/
         │   ├── __init__.py
@@ -30,38 +37,104 @@ finance_api_service/
         ├── clients/
         │   ├── __init__.py
         │   └── fireant.py
-        ├── celery_app.py
         ├── config/
         │   ├── __init__.py
         │   └── settings.py
         ├── db/
         │   ├── __init__.py
         │   └── session.py
+        ├── observability/
+        │   ├── __init__.py
+        │   └── logging.py
         ├── repositories/
         │   ├── __init__.py
         │   ├── base.py
         │   ├── company.py
         │   ├── finance_report.py
         │   ├── market.py
-        │   └── posts.py
+        │   ├── posts.py
+        │   └── symbols.py
         ├── schemas/
         │   ├── __init__.py
         │   ├── jobs.py
         │   └── requests.py
-        ├── jobs.py
         ├── services/
         │   ├── __init__.py
         │   ├── company.py
         │   ├── finance_report.py
         │   ├── market.py
-        │   └── posts.py
+        │   ├── posts.py
+        │   └── symbols.py
         └── utils/
             ├── __init__.py
-            └── dates.py
+            ├── dates.py
             └── prices.py
 ```
 
-## Mapping tu script cu
+## Main Modules
+
+`app.py`: FastAPI app factory, logging middleware, startup bootstrap hook.
+
+`api/v1.py`: HTTP controller layer. Sync endpoints return `202 Accepted` and
+enqueue Celery tasks. They must not run long sync work directly.
+
+`jobs.py`: Celery dispatch helpers and status lookup. It also exposes the
+shared runner functions used by Celery tasks.
+
+`celery_app.py`: Celery app, task definitions, Redis backend/broker config,
+and Beat schedule.
+
+`clients/fireant.py`: FireAnt HTTP client with auth, retry, timeout, and
+error handling.
+
+`services/*`: Business orchestration for each sync domain.
+
+`repositories/*`: Database read/write/upsert logic. SQLAlchemy models come
+from `finance-schema`.
+
+`schemas/*`: Request/response DTOs for API and Celery payloads.
+
+`utils/*`: Shared helpers for dates and adjusted price calculations.
+
+## Runtime Flow
+
+Manual trigger:
+
+```text
+FastAPI endpoint
+  -> jobs.enqueue_job(...)
+  -> Redis broker
+  -> celery-worker
+  -> service
+  -> repository
+  -> PostgreSQL
+```
+
+Scheduled trigger:
+
+```text
+celery-beat
+  -> Redis broker
+  -> celery-worker
+  -> service
+  -> repository
+  -> PostgreSQL
+```
+
+## Data And Migration Ownership
+
+Database schema is owned by `finance-schema`, installed from
+`Khangkhang92/schema_lib`.
+
+The API container runs:
+
+```bash
+finance-schema upgrade head
+```
+
+before starting FastAPI.
+
+## Sync Jobs
 
 `posts.py` -> `services/posts.py` + `repositories/posts.py` + `POST /fireant_data/webhooks/posts/sync`
 
@@ -73,25 +146,17 @@ finance_api_service/
 
 `getdata/base.py` -> `clients/fireant.py`
 
-`common/db/*` -> `db/session.py`, dung `finance_schema.config.get_database_url`.
+`common/db/*` -> `db/session.py`, using `finance_schema.config.get_database_url`.
 
-## Job Nen
+## Operational Notes
 
-Tat ca sync webhook deu enqueue job nen qua `jobs.py` va tra `job_id`.
-Trang thai job duoc doc qua `GET /fireant_data/jobs/{job_id}`.
+`finance-statements`, `session-quotes`, and `history-prices` commit by batch so
+long sync jobs do not lose all progress if interrupted.
 
-`finance-statements`, `session-quotes`, `history-prices` deu commit theo batch de
-tranh mat toan bo tien do khi job dai bi dung giua chung.
+`history-prices` stores raw prices plus `adj_ratio`. Adjusted prices are
+derived data and should be computed from raw data when needed.
 
-## Job Dinh Ky
+`symbols` are loaded from DB in alphabetical order for downstream sync jobs.
 
-`celery_app.py` dinh nghia Celery app, Redis broker/backend, va lich mac dinh cho:
-
-- `symbols`
-- `company-details`
-- `market-mentions`
-- `session-quotes`
-- `history-prices`
-- `finance-statements`
-
-FastAPI van giu webhook trigger thu cong. Celery phu trach worker va scheduler.
+`finance-statements` skips ETF/index-like symbols that do not have financial
+reports.

@@ -60,6 +60,9 @@ GET  /fireant_data/jobs/{job_id}
 Tat ca endpoint sync deu tra `202 Accepted` va `job_id`. Theo doi tien do qua
 `GET /fireant_data/jobs/{job_id}`.
 
+Webhook API chi enqueue task vao Celery. Moi xu ly dong bo ton thoi gian deu
+chay trong `celery-worker`, khong chay long task trong process API.
+
 ## Job dinh ky bang Celery
 
 Compose dev stack da co san:
@@ -76,7 +79,7 @@ Lich mac dinh hien tai:
 - `market-mentions`: 08:00
 - `session-quotes`: 16:15
 - `history-prices`: 17:00
-- `finance-statements`: 19:00, ngay 05 cua cac thang `01, 04, 07, 10`
+- `finance-statements`: 19:00, ngay 15 cua cac thang `01, 04, 07, 10`
 
 Mui gio: `Asia/Ho_Chi_Minh`
 
@@ -86,8 +89,8 @@ giam rui ro keo du lieu qua som khi FireAnt chua cap nhat du.
 `symbols` va `company-details` cung duoc chot theo quy de dong bo cung nhip voi
 chu ky cap nhat doanh nghiep.
 
-Luu y: `GET /fireant_data/jobs/{job_id}` chi theo doi cac job duoc enqueue qua
-webhook FastAPI. Cac task dinh ky cua Celery chay doc lap qua Redis backend.
+`GET /fireant_data/jobs/{job_id}` doc trang thai tu Celery backend. Ca webhook
+API va Celery Beat deu day task vao worker theo cung mot co che.
 
 ## Dong bo tu dong
 
