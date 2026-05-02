@@ -1,28 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Any
-
-from pydantic import BaseModel, Field
-
-from finance_api.schemas.requests import SyncResponse
+from pydantic import BaseModel
 
 
 class JobAcceptedResponse(BaseModel):
-    job_id: str
     job_name: str
-    status: str
-    deduplicated: bool = False
+    accepted: bool = True
     message: str
-
-
-class JobStatusResponse(BaseModel):
-    job_id: str
-    job_name: str
-    status: str
-    created_at: datetime
-    started_at: datetime | None = None
-    finished_at: datetime | None = None
-    error: str | None = None
-    result: SyncResponse | None = None
-    meta: dict[str, Any] = Field(default_factory=dict)

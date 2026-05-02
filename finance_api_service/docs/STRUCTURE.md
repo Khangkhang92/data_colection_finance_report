@@ -78,8 +78,8 @@ finance_api_service/
 `api/v1.py`: HTTP controller layer. Sync endpoints return `202 Accepted` and
 enqueue Celery tasks. They must not run long sync work directly.
 
-`jobs.py`: Celery dispatch helpers and status lookup. It also exposes the
-shared runner functions used by Celery tasks.
+`jobs.py`: Celery dispatch helpers and shared runner functions used by Celery
+tasks.
 
 `celery_app.py`: Celery app, task definitions, Redis backend/broker config,
 and Beat schedule.
@@ -152,6 +152,10 @@ before starting FastAPI.
 
 `finance-statements`, `session-quotes`, and `history-prices` commit by batch so
 long sync jobs do not lose all progress if interrupted.
+
+`finance-statements` defaults to a long backfill window of `120` periods so the
+first run loads the available history for every company/report type. Subsequent
+runs use DB coverage checks and only fetch missing batches.
 
 `history-prices` stores raw prices plus `adj_ratio`. Adjusted prices are
 derived data and should be computed from raw data when needed.

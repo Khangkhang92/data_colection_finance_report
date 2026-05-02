@@ -164,22 +164,14 @@ Endpoint webhook:
 curl -X POST http://localhost:8000/fireant_data/webhooks/symbols/sync
 ```
 
-Response se tra `job_id`, vi sync chay nen:
+Response tra `202 Accepted` sau khi task duoc dua vao Celery:
 
 ```json
 {
-  "job_id": "uuid",
   "job_name": "symbols_sync",
-  "status": "queued",
-  "deduplicated": false,
+  "accepted": true,
   "message": "Symbols sync job accepted"
 }
-```
-
-Kiem tra job:
-
-```bash
-curl http://localhost:8000/fireant_data/jobs/<job_id>
 ```
 
 Mac dinh endpoint lay `ALL_SYMBOL_URL2` va chi upsert instruments co `type=stock`
@@ -199,6 +191,7 @@ Endpoint nay khong can body. Service se:
 
 - lay ticker tu DB theo thu tu alphabet
 - tu dong suy ra ky bao cao gan nhat theo thoi diem hien tai
+- lan dau backfill toi da `120` ky ve truoc cho moi cong ty/report type
 - chi fetch cac batch `symbol + report_type` con thieu du lieu
 - commit theo batch va resume tu dong khi goi lai
 
@@ -206,12 +199,6 @@ Goi job:
 
 ```bash
 curl -X POST http://localhost:8000/fireant_data/webhooks/finance-statements/sync
-```
-
-Xem trang thai job:
-
-```bash
-curl http://localhost:8000/fireant_data/jobs/<job_id>
 ```
 
 ## 9. Sync market mentions
@@ -272,5 +259,4 @@ Mui gio cua scheduler: `Asia/Ho_Chi_Minh`
 
 `symbols` va `company-details` hien cung chay theo quy thay vi hang ngay.
 
-`GET /fireant_data/jobs/{job_id}` doc state tu Celery backend. Ca webhook API
-va Celery Beat deu day task vao worker theo cung mot co che.
+Ca webhook API va Celery Beat deu day task vao worker theo cung mot co che.

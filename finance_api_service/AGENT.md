@@ -72,6 +72,10 @@ adjustment factor. Derived adjusted values should be computed from raw values.
 
 Sync jobs should be resumable and batch-committed where possible.
 
+Finance statement sync defaults to a `120` period backfill window so the first
+run loads historical statements for all eligible companies. Do not reduce that
+default unless the sync strategy changes.
+
 Symbol processing should preserve alphabetical order from DB.
 
 ## Code Organization

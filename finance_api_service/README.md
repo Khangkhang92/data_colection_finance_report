@@ -54,11 +54,9 @@ POST /fireant_data/webhooks/company-details/sync
 POST /fireant_data/webhooks/market-mentions/sync
 POST /fireant_data/webhooks/session-quotes/sync
 POST /fireant_data/webhooks/history-prices/sync
-GET  /fireant_data/jobs/{job_id}
 ```
 
-Tat ca endpoint sync deu tra `202 Accepted` va `job_id`. Theo doi tien do qua
-`GET /fireant_data/jobs/{job_id}`.
+Tat ca endpoint sync deu tra `202 Accepted` sau khi task duoc dua vao Celery.
 
 Webhook API chi enqueue task vao Celery. Moi xu ly dong bo ton thoi gian deu
 chay trong `celery-worker`, khong chay long task trong process API.
@@ -89,12 +87,12 @@ giam rui ro keo du lieu qua som khi FireAnt chua cap nhat du.
 `symbols` va `company-details` cung duoc chot theo quy de dong bo cung nhip voi
 chu ky cap nhat doanh nghiep.
 
-`GET /fireant_data/jobs/{job_id}` doc trang thai tu Celery backend. Ca webhook
-API va Celery Beat deu day task vao worker theo cung mot co che.
+Ca webhook API va Celery Beat deu day task vao worker theo cung mot co che.
 
 ## Dong bo tu dong
 
-- `finance-statements/sync`: khong can body, tu dong chay theo ky bao cao hien tai,
+- `finance-statements/sync`: khong can body, tu dong chay theo ky bao cao hien tai;
+  lan dau backfill toi da `120` ky ve truoc cho moi cong ty/report type, cac lan sau
   chi lay batch con thieu, commit theo `symbol + report_type`, va resume khi goi lai.
 - `market-mentions/sync`: khong can body, mac dinh lay du `today`, `weekly`,
   `monthly`.

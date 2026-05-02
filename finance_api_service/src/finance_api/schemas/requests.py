@@ -39,7 +39,9 @@ class FinanceStatementsSyncRequest(BaseModel):
             FinancialReportType.CASH_FLOW_INDIRECT,
         ]
     )
-    limit: int = 1
+    # FireAnt returns data backwards from the anchor period. Use a long default
+    # so the first run backfills the available history for every company.
+    limit: int = 120
 
 
 class CompanyDetailsSyncRequest(BaseModel):

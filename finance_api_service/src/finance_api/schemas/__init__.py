@@ -1,4 +1,4 @@
-from finance_api.schemas.jobs import JobAcceptedResponse, JobStatusResponse
+from finance_api.schemas.jobs import JobAcceptedResponse
 from finance_api.schemas.requests import (
     CompanyDetailsSyncRequest,
     FinancialReportType,
@@ -17,7 +17,6 @@ __all__ = [
     "FinanceStatementsSyncRequest",
     "HistoryPricesSyncRequest",
     "JobAcceptedResponse",
-    "JobStatusResponse",
     "MarketMentionsSyncRequest",
     "PostsSyncRequest",
     "SessionQuotesSyncRequest",
