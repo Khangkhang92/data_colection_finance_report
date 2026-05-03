@@ -17,6 +17,14 @@ cp .env.example .env
 docker-compose up -d postgres redis api celery-worker celery-beat flower
 ```
 
+Compose da dat ten volume co dinh:
+
+- `finance_postgres_data`
+- `fireant_redis_data`
+
+Vi vay data se duoc giu lai qua `docker compose down`, ke ca khi ban chay
+Compose tu thu muc khac nhau hoac dung `-f finance_api_service/docker-compose.yml`.
+
 ## Service URLs mac dinh
 
 ```text
@@ -79,7 +87,13 @@ task history va task state. Neu can auth co the set `FLOWER_BASIC_AUTH=user:pass
 
 ## Reset local data
 
-Lenh nay xoa toan bo database va redis local:
+Lenh sau chi dung container/network, KHONG xoa data:
+
+```bash
+docker compose down
+```
+
+Lenh nay moi xoa toan bo database va redis local:
 
 ```bash
 docker-compose down -v
