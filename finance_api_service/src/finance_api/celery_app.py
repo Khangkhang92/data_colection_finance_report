@@ -8,6 +8,7 @@ from finance_api.jobs import (
     run_company_details_sync,
     run_finance_statements_sync,
     run_history_prices_sync,
+    run_industries_sync,
     run_market_mentions_sync,
     run_posts_sync,
     run_session_quotes_sync,
@@ -16,6 +17,7 @@ from finance_api.jobs import (
 from finance_api.schemas.requests import (
     CompanyDetailsSyncRequest,
     HistoryPricesSyncRequest,
+    IndustriesSyncRequest,
     MarketMentionsSyncRequest,
     PostsSyncRequest,
     SessionQuotesSyncRequest,
@@ -46,6 +48,11 @@ celery_app.conf.update(
         "sync-symbols-quarterly": {
             "task": "finance_api.sync_symbols",
             "schedule": crontab(month_of_year="1,4,7,10", day_of_month=2, hour=6, minute=0),
+        },
+        # Dong bo danh muc nganh FireAnt va mapping nganh cho symbol sau symbol sync.
+        "sync-industries-quarterly": {
+            "task": "finance_api.sync_industries",
+            "schedule": crontab(month_of_year="1,4,7,10", day_of_month=2, hour=6, minute=15),
         },
         # Sau khi cap nhat symbol, dong bo thong tin doanh nghiep theo quy.
         # Chay luc 06:30, ngay 03 cua cac thang 01, 04, 07, 10.
@@ -100,6 +107,12 @@ def sync_posts_task(payload: dict | None = None) -> dict:
 def sync_symbols_task(payload: dict | None = None) -> dict:
     request = SymbolsSyncRequest(**(payload or {}))
     return run_symbols_sync(request).model_dump(mode="json")
+
+
+@celery_app.task(name="finance_api.sync_industries")
+def sync_industries_task(payload: dict | None = None) -> dict:
+    request = IndustriesSyncRequest(**(payload or {}))
+    return run_industries_sync(request).model_dump(mode="json")
 
 
 @celery_app.task(name="finance_api.sync_company_details")

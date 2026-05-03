@@ -6,6 +6,7 @@ from finance_api.config import Settings, get_settings
 from finance_api.jobs import enqueue_job
 from finance_api.schemas import (
     CompanyDetailsSyncRequest,
+    IndustriesSyncRequest,
     JobAcceptedResponse,
     PostsSyncRequest,
     SessionQuotesSyncRequest,
@@ -83,6 +84,23 @@ def sync_symbols(
     return JobAcceptedResponse(
         job_name=job_name,
         message="Symbols sync job accepted",
+    )
+
+
+@router.post(
+    "/webhooks/industries/sync",
+    response_model=JobAcceptedResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def sync_industries(
+    request: IndustriesSyncRequest = Body(default_factory=IndustriesSyncRequest),
+    settings: Settings = Depends(get_settings),
+) -> JobAcceptedResponse:
+    job_name = "industries_sync"
+    enqueue_job(job_name, request.model_dump(mode="json"))
+    return JobAcceptedResponse(
+        job_name=job_name,
+        message="Industries sync job accepted",
     )
 
 

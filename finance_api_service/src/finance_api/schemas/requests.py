@@ -72,6 +72,29 @@ class SymbolsSyncRequest(BaseModel):
         return normalized or ["stock"]
 
 
+class IndustriesSyncRequest(BaseModel):
+    include_symbols: bool = True
+    include_auth: bool = True
+    icb_codes: list[str] | None = None
+
+    @field_validator("icb_codes", mode="before")
+    @classmethod
+    def normalize_icb_codes(cls, value: Any) -> list[str] | None:
+        if value is None:
+            return None
+        if isinstance(value, str):
+            value = [value]
+        if not isinstance(value, list):
+            return None
+
+        normalized = [
+            str(item).strip()
+            for item in value
+            if item is not None and str(item).strip() and str(item).strip().lower() != "string"
+        ]
+        return normalized or None
+
+
 class MarketMentionsSyncRequest(BaseModel):
     periods: list[str] = Field(default_factory=lambda: ["today", "weekly", "monthly"])
     target_date: date | None = None

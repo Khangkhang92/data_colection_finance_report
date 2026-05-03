@@ -145,6 +145,8 @@ class SymbolService:
             "ticker": str(ticker).upper(),
             "exchange": exchange,
             "company_name": raw.get("name"),
+            "industry_code": raw.get("industryCode") or raw.get("industry_code"),
+            "icb_code": raw.get("icbCode") or raw.get("icb_code"),
             "industry": raw.get("industry"),
             "sector": raw.get("sector"),
             "short_industry": raw.get("shortIndustry") or raw.get("short_industry"),

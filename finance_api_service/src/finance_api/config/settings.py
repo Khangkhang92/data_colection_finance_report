@@ -33,6 +33,15 @@ class Settings(BaseSettings):
     subsidiaries_url: str | None = Field(default=None, alias="SUBSIDIARIES")
     finance_url: str | None = Field(default=None, alias="FiNANCE_URL2")
     all_symbol_url: str | None = Field(default=None, alias="ALL_SYMBOL_URL2")
+    symbol_detail_url: str = Field(
+        default="https://api.fireant.vn/symbols/{symbol}",
+        alias="SYMBOL_DETAIL_URL",
+    )
+    industries_url: str = Field(default="https://api.fireant.vn/industries", alias="INDUSTRIES_URL")
+    industry_symbols_url: str = Field(
+        default="https://api.fireant.vn/icb/{industry_code}/symbols",
+        alias="INDUSTRY_SYMBOLS_URL",
+    )
     market_mention_url: str | None = Field(default=None, alias="MARKET_MENTION")
     session_quote_url: str | None = Field(default=None, alias="BUY_SELL_DURING_SESSION")
 

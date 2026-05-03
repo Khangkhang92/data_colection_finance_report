@@ -10,6 +10,7 @@ from finance_api.db import session_scope
 from finance_api.schemas import (
     CompanyDetailsSyncRequest,
     HistoryPricesSyncRequest,
+    IndustriesSyncRequest,
     MarketMentionsSyncRequest,
     PostsSyncRequest,
     SessionQuotesSyncRequest,
@@ -18,6 +19,7 @@ from finance_api.schemas import (
 )
 from finance_api.services.company import CompanyService
 from finance_api.services.finance_report import FinanceStatementService
+from finance_api.services.industries import IndustryService
 from finance_api.services.market import MarketService
 from finance_api.services.posts import PostsService
 from finance_api.services.symbols import SymbolService
@@ -33,6 +35,7 @@ def _celery_app():
 TASK_NAMES: dict[str, str] = {
     "posts_sync": "finance_api.posts",
     "symbols_sync": "finance_api.sync_symbols",
+    "industries_sync": "finance_api.sync_industries",
     "finance_statements_sync": "finance_api.sync_finance_statements",
     "company_details_sync": "finance_api.sync_company_details",
     "market_mentions_sync": "finance_api.sync_market_mentions",
@@ -70,6 +73,7 @@ def enqueue_bootstrap_jobs(settings: Settings) -> list[str]:
     bootstrap_specs: list[tuple[str, dict[str, Any]]] = [
         ("posts_sync", PostsSyncRequest().model_dump(mode="json")),
         ("symbols_sync", SymbolsSyncRequest().model_dump(mode="json")),
+        ("industries_sync", IndustriesSyncRequest().model_dump(mode="json")),
         ("finance_statements_sync", {}),
         ("company_details_sync", CompanyDetailsSyncRequest().model_dump(mode="json")),
         ("market_mentions_sync", MarketMentionsSyncRequest().model_dump(mode="json")),
@@ -113,6 +117,13 @@ def run_symbols_sync(request: SymbolsSyncRequest) -> SyncResponse:
     client = ApiClient(settings)
     with session_scope() as session:
         return SymbolService(settings, client, session).sync(request)
+
+
+def run_industries_sync(request: IndustriesSyncRequest) -> SyncResponse:
+    settings = get_settings()
+    client = ApiClient(settings)
+    with session_scope() as session:
+        return IndustryService(settings, client, session).sync(request)
 
 
 def run_market_mentions_sync(request: MarketMentionsSyncRequest | None = None) -> SyncResponse:
