@@ -100,8 +100,9 @@ Flower mac dinh mo tai `http://localhost:5555`.
 ## Dong bo tu dong
 
 - `finance-statements/sync`: khong can body, tu dong chay theo ky bao cao hien tai;
-  lan dau backfill toi da `120` ky ve truoc cho moi cong ty/report type, cac lan sau
-  chi lay batch con thieu, commit theo `symbol + report_type`, va resume khi goi lai.
+  lan dau backfill toi da `120` ky quy va `30` bao cao nam (`quarter=0`) cho moi
+  cong ty/report type, cac lan sau chi lay batch con thieu, commit theo
+  `symbol + report_type`, va resume khi goi lai.
 - `market-mentions/sync`: khong can body, mac dinh lay du `today`, `weekly`,
   `monthly`.
 - `session-quotes/sync`: khong can body, lay toan bo ticker trong DB, commit theo

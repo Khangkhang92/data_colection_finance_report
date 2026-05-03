@@ -153,9 +153,10 @@ before starting FastAPI.
 `finance-statements`, `session-quotes`, and `history-prices` commit by batch so
 long sync jobs do not lose all progress if interrupted.
 
-`finance-statements` defaults to a long backfill window of `120` periods so the
-first run loads the available history for every company/report type. Subsequent
-runs use DB coverage checks and only fetch missing batches.
+`finance-statements` defaults to a long backfill window of `120` quarterly
+periods plus `30` annual periods (`quarter=0`) so the first run loads the
+available history for every company/report type. Subsequent runs use DB
+coverage checks and only fetch missing batches.
 
 `history-prices` stores raw prices plus `adj_ratio`. Adjusted prices are
 derived data and should be computed from raw data when needed.

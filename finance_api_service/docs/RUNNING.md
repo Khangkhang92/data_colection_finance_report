@@ -207,7 +207,7 @@ Endpoint nay khong can body. Service se:
 
 - lay ticker tu DB theo thu tu alphabet
 - tu dong suy ra ky bao cao gan nhat theo thoi diem hien tai
-- lan dau backfill toi da `120` ky ve truoc cho moi cong ty/report type
+- lan dau backfill toi da `120` ky quy va `30` bao cao nam (`quarter=0`) cho moi cong ty/report type
 - chi fetch cac batch `symbol + report_type` con thieu du lieu
 - commit theo batch va resume tu dong khi goi lai
 

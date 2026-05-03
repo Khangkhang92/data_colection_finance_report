@@ -42,6 +42,9 @@ class FinanceStatementsSyncRequest(BaseModel):
     # FireAnt returns data backwards from the anchor period. Use a long default
     # so the first run backfills the available history for every company.
     limit: int = 120
+    # Annual reports use quarter=0. Keep this tied to the quarterly default:
+    # 120 quarters ~= 30 years of annual reports.
+    annual_limit: int = 30
 
 
 class CompanyDetailsSyncRequest(BaseModel):

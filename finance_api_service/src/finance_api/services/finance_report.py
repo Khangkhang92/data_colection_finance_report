@@ -16,6 +16,10 @@ from sqlalchemy.orm import Session
 class PendingFinanceBatch:
     symbol: str
     report_type: int
+    period_kind: str
+    anchor_year: int
+    anchor_quarter: int
+    target_periods: list[tuple[int, int]]
     latest_existing: tuple[int, int] | None
     missing_periods: list[tuple[int, int]]
 
@@ -33,25 +37,39 @@ class FinanceStatementService:
         saved = 0
         errors: list[str] = []
         symbols = get_financial_report_symbols(self.session)
-        anchor_year, anchor_quarter = self._current_reporting_period(date.today())
-        target_periods = self._build_target_periods(
-            start_year=anchor_year,
-            start_quarter=anchor_quarter,
+        today = date.today()
+        quarter_anchor_year, quarter_anchor_quarter = self._current_reporting_period(today)
+        annual_anchor_year = self._current_annual_reporting_year(today)
+        quarterly_target_periods = self._build_target_periods(
+            start_year=quarter_anchor_year,
+            start_quarter=quarter_anchor_quarter,
             limit=request.limit,
+        )
+        annual_target_periods = self._build_target_periods(
+            start_year=annual_anchor_year,
+            start_quarter=0,
+            limit=request.annual_limit,
         )
         pending_batches = self._collect_pending_batches(
             symbols=symbols,
             report_types=request.report_types,
-            target_periods=target_periods,
+            period_windows=[
+                ("quarterly", quarter_anchor_year, quarter_anchor_quarter, quarterly_target_periods),
+                ("annual", annual_anchor_year, 0, annual_target_periods),
+            ],
         )
         logger.info(
             "Finance statements sync started symbols={symbols} "
-            "report_types={report_types} anchor_year={year} anchor_quarter={quarter} limit={limit} pending_batches={pending_batches}",
+            "report_types={report_types} quarterly_anchor_year={quarterly_year} "
+            "quarterly_anchor_quarter={quarterly_quarter} annual_anchor_year={annual_year} "
+            "limit={limit} annual_limit={annual_limit} pending_batches={pending_batches}",
             symbols=len(symbols),
             report_types=[int(report_type) for report_type in request.report_types],
-            year=anchor_year,
-            quarter=anchor_quarter,
+            quarterly_year=quarter_anchor_year,
+            quarterly_quarter=quarter_anchor_quarter,
+            annual_year=annual_anchor_year,
             limit=request.limit,
+            annual_limit=request.annual_limit,
             pending_batches=len(pending_batches),
         )
 
@@ -66,10 +84,10 @@ class FinanceStatementService:
                 batch_result = self._sync_pending_batch(
                     symbol=symbol,
                     report_type_value=report_type_value,
-                    anchor_year=anchor_year,
-                    anchor_quarter=anchor_quarter,
-                    limit=request.limit,
-                    target_periods=target_periods,
+                    anchor_year=pending.anchor_year,
+                    anchor_quarter=pending.anchor_quarter,
+                    limit=len(pending.target_periods),
+                    target_periods=pending.target_periods,
                 )
                 fetched += batch_result["fetched"]
                 saved += batch_result["saved"]
@@ -77,10 +95,11 @@ class FinanceStatementService:
                 request_pages = batch_result["request_pages"]
                 logger.info(
                     "Finance statements synced symbol={symbol} report_type={report_type} "
-                    "fetched={fetched_rows} saved={saved_rows} request_pages={request_pages} "
+                    "period_kind={period_kind} fetched={fetched_rows} saved={saved_rows} request_pages={request_pages} "
                     "latest_existing={latest_existing} missing_before={missing_before} missing_after={missing_after}",
                     symbol=symbol,
                     report_type=report_type_value,
+                    period_kind=pending.period_kind,
                     fetched_rows=batch_result["fetched"],
                     saved_rows=batch_result["saved"],
                     request_pages=request_pages,
@@ -90,15 +109,16 @@ class FinanceStatementService:
                 )
                 if missing_after:
                     errors.append(
-                        f"{symbol}:{report_type_value}: missing periods after sync {missing_after}"
+                        f"{symbol}:{report_type_value}:{pending.period_kind}: missing periods after sync {missing_after}"
                     )
             except Exception as exc:
                 self.session.rollback()
-                errors.append(f"{symbol}:{report_type_value}: {exc}")
+                errors.append(f"{symbol}:{report_type_value}:{pending.period_kind}: {exc}")
                 logger.exception(
-                    "Finance statements sync failed symbol={symbol} report_type={report_type}",
+                    "Finance statements sync failed symbol={symbol} report_type={report_type} period_kind={period_kind}",
                     symbol=symbol,
                     report_type=report_type_value,
+                    period_kind=pending.period_kind,
                 )
 
         logger.info(
@@ -118,9 +138,11 @@ class FinanceStatementService:
             meta={
                 "symbols": len(symbols),
                 "pending_batches": len(pending_batches),
-                "anchor_year": anchor_year,
-                "anchor_quarter": anchor_quarter,
+                "quarterly_anchor_year": quarter_anchor_year,
+                "quarterly_anchor_quarter": quarter_anchor_quarter,
+                "annual_anchor_year": annual_anchor_year,
                 "limit": request.limit,
+                "annual_limit": request.annual_limit,
             },
         )
 
@@ -226,40 +248,46 @@ class FinanceStatementService:
         self,
         symbols: list[str],
         report_types: list[FinancialReportType],
-        target_periods: list[tuple[int, int]],
+        period_windows: list[tuple[str, int, int, list[tuple[int, int]]]],
     ) -> list[PendingFinanceBatch]:
         pending: list[PendingFinanceBatch] = []
         for symbol in symbols:
             for report_type in report_types:
                 report_type_value = int(report_type)
-                latest_existing = self.repository.get_latest_period(symbol, report_type_value)
-                existing_periods = self.repository.get_existing_periods(
-                    symbol, report_type_value, target_periods
-                )
-                has_missing_parent_links = self.repository.has_missing_parent_links(
-                    symbol, report_type_value
-                )
-                missing_periods = [
-                    period for period in target_periods if period not in existing_periods
-                ]
-                if not missing_periods and not has_missing_parent_links:
-                    logger.info(
-                        "Finance statements already covered symbol={symbol} report_type={report_type} "
-                        "latest_existing={latest_existing} periods={period_count}",
-                        symbol=symbol,
-                        report_type=report_type_value,
-                        latest_existing=latest_existing,
-                        period_count=len(target_periods),
+                for period_kind, anchor_year, anchor_quarter, target_periods in period_windows:
+                    latest_existing = self.repository.get_latest_period(symbol, report_type_value)
+                    existing_periods = self.repository.get_existing_periods(
+                        symbol, report_type_value, target_periods
                     )
-                    continue
-                pending.append(
-                    PendingFinanceBatch(
-                        symbol=symbol,
-                        report_type=report_type_value,
-                        latest_existing=latest_existing,
-                        missing_periods=missing_periods,
+                    has_missing_parent_links = self.repository.has_missing_parent_links(
+                        symbol, report_type_value
                     )
-                )
+                    missing_periods = [
+                        period for period in target_periods if period not in existing_periods
+                    ]
+                    if not missing_periods and not has_missing_parent_links:
+                        logger.info(
+                            "Finance statements already covered symbol={symbol} report_type={report_type} "
+                            "period_kind={period_kind} latest_existing={latest_existing} periods={period_count}",
+                            symbol=symbol,
+                            report_type=report_type_value,
+                            period_kind=period_kind,
+                            latest_existing=latest_existing,
+                            period_count=len(target_periods),
+                        )
+                        continue
+                    pending.append(
+                        PendingFinanceBatch(
+                            symbol=symbol,
+                            report_type=report_type_value,
+                            period_kind=period_kind,
+                            anchor_year=anchor_year,
+                            anchor_quarter=anchor_quarter,
+                            target_periods=target_periods,
+                            latest_existing=latest_existing,
+                            missing_periods=missing_periods,
+                        )
+                    )
         return pending
 
     @staticmethod
@@ -292,6 +320,10 @@ class FinanceStatementService:
         if current_quarter == 1:
             return (today.year - 1, 4)
         return (today.year, current_quarter - 1)
+
+    @staticmethod
+    def _current_annual_reporting_year(today: date) -> int:
+        return today.year - 1
 
     @staticmethod
     def _extract_response_periods(rows: list[dict]) -> set[tuple[int, int]]:
