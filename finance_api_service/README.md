@@ -27,9 +27,8 @@ finance-schema upgrade head
 python -m uvicorn --app-dir src finance_api.app:create_app --factory --reload
 ```
 
-Named volumes trong Compose duoc dat ten co dinh (`finance_postgres_data`,
-`fireant_redis_data`) de tranh truong hop doi project name lam nham volume va
-tuong nhu mat du lieu sau `docker compose down`.
+Data local cua PostgreSQL va Redis duoc bind mount vao `./volumes/postgres` va
+`./volumes/redis` ngay tai root cua service de de kiem soat, backup hoac reset.
 
 Workflow tren dung cho local mono-repo. Neu deploy theo kieu package release, co
 the dung `requirements.release.txt` de cai `finance-schema` truc tiep tu GitHub

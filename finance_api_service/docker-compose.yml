@@ -10,7 +10,7 @@ services:
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - finance_postgres_data:/var/lib/postgresql/data
+      - ./volumes/postgres:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-finance} -d ${POSTGRES_DB:-finance}"]
       interval: 10s
@@ -24,7 +24,7 @@ services:
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
-      - fireant_redis_data:/data
+      - ./volumes/redis:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -145,9 +145,3 @@ services:
         "-lc",
         "celery -A finance_api.celery_app:celery_app flower --address=0.0.0.0 --port=5555 ${FLOWER_BASIC_AUTH:+--basic_auth=$FLOWER_BASIC_AUTH}"
       ]
-
-volumes:
-  finance_postgres_data:
-    name: finance_postgres_data
-  fireant_redis_data:
-    name: fireant_redis_data
