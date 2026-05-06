@@ -11,4 +11,4 @@ pandas>=2.2,<3
 SQLAlchemy>=2.0,<3
 psycopg2-binary>=2.9,<3
 # Shared schema package installed directly from GitHub.
-finance-schema @ git+https://github.com/Khangkhang92/schema_lib.git@main
+finance-schema @ git+https://github.com/Khangkhang92/schema_lib.git@v0.1.2
