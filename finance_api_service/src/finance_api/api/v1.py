@@ -6,6 +6,9 @@ from finance_api.config import Settings, get_settings
 from finance_api.jobs import enqueue_job
 from finance_api.schemas import (
     CompanyDetailsSyncRequest,
+    ExtendedInstrumentsSyncRequest,
+    FundamentalsSyncRequest,
+    HistoryPricesSyncRequest,
     IndustriesSyncRequest,
     JobAcceptedResponse,
     PostsSyncRequest,
@@ -121,6 +124,40 @@ def sync_market_mentions(
 
 
 @router.post(
+    "/webhooks/fundamentals/sync",
+    response_model=JobAcceptedResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def sync_fundamentals(
+    request: FundamentalsSyncRequest = Body(default_factory=FundamentalsSyncRequest),
+    settings: Settings = Depends(get_settings),
+) -> JobAcceptedResponse:
+    job_name = "fundamentals_sync"
+    enqueue_job(job_name, request.model_dump(mode="json"))
+    return JobAcceptedResponse(
+        job_name=job_name,
+        message="Fundamentals sync job accepted",
+    )
+
+
+@router.post(
+    "/webhooks/extended-instruments/sync",
+    response_model=JobAcceptedResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def sync_extended_instruments(
+    request: ExtendedInstrumentsSyncRequest = Body(default_factory=ExtendedInstrumentsSyncRequest),
+    settings: Settings = Depends(get_settings),
+) -> JobAcceptedResponse:
+    job_name = "extended_instruments_sync"
+    enqueue_job(job_name, request.model_dump(mode="json"))
+    return JobAcceptedResponse(
+        job_name=job_name,
+        message="Extended instruments sync job accepted",
+    )
+
+
+@router.post(
     "/webhooks/session-quotes/sync",
     response_model=JobAcceptedResponse,
     status_code=status.HTTP_202_ACCEPTED,
@@ -143,10 +180,11 @@ def sync_session_quotes(
     status_code=status.HTTP_202_ACCEPTED,
 )
 def sync_history_prices(
+    request: HistoryPricesSyncRequest = Body(default_factory=HistoryPricesSyncRequest),
     settings: Settings = Depends(get_settings),
 ) -> JobAcceptedResponse:
     job_name = "history_prices_sync"
-    enqueue_job(job_name, {})
+    enqueue_job(job_name, request.model_dump(mode="json"))
     return JobAcceptedResponse(
         job_name=job_name,
         message="History prices sync job accepted",

@@ -9,7 +9,9 @@ from finance_api.config import Settings, get_settings
 from finance_api.db import session_scope
 from finance_api.schemas import (
     CompanyDetailsSyncRequest,
+    ExtendedInstrumentsSyncRequest,
     HistoryPricesSyncRequest,
+    FundamentalsSyncRequest,
     IndustriesSyncRequest,
     MarketMentionsSyncRequest,
     PostsSyncRequest,
@@ -18,6 +20,7 @@ from finance_api.schemas import (
     SyncResponse,
 )
 from finance_api.services.company import CompanyService
+from finance_api.services.extended_instruments import ExtendedInstrumentService
 from finance_api.services.finance_report import FinanceStatementService
 from finance_api.services.industries import IndustryService
 from finance_api.services.market import MarketService
@@ -39,6 +42,8 @@ TASK_NAMES: dict[str, str] = {
     "finance_statements_sync": "finance_api.sync_finance_statements",
     "company_details_sync": "finance_api.sync_company_details",
     "market_mentions_sync": "finance_api.sync_market_mentions",
+    "fundamentals_sync": "finance_api.sync_fundamentals",
+    "extended_instruments_sync": "finance_api.sync_extended_instruments",
     "session_quotes_sync": "finance_api.sync_session_quotes",
     "history_prices_sync": "finance_api.sync_history_prices",
 }
@@ -76,6 +81,8 @@ def enqueue_bootstrap_jobs(settings: Settings) -> list[str]:
         ("industries_sync", IndustriesSyncRequest().model_dump(mode="json")),
         ("finance_statements_sync", {}),
         ("company_details_sync", CompanyDetailsSyncRequest().model_dump(mode="json")),
+        ("fundamentals_sync", FundamentalsSyncRequest().model_dump(mode="json")),
+        ("extended_instruments_sync", ExtendedInstrumentsSyncRequest().model_dump(mode="json")),
         ("market_mentions_sync", MarketMentionsSyncRequest().model_dump(mode="json")),
         ("session_quotes_sync", SessionQuotesSyncRequest().model_dump(mode="json")),
         ("history_prices_sync", HistoryPricesSyncRequest().model_dump(mode="json")),
@@ -131,6 +138,24 @@ def run_market_mentions_sync(request: MarketMentionsSyncRequest | None = None) -
     client = ApiClient(settings)
     with session_scope() as session:
         return MarketService(settings, client, session).sync_mentions(request)
+
+
+def run_fundamentals_sync(request: FundamentalsSyncRequest | None = None) -> SyncResponse:
+    settings = get_settings()
+    client = ApiClient(settings)
+    with session_scope() as session:
+        return MarketService(settings, client, session).sync_fundamentals(request)
+
+
+def run_extended_instruments_sync(
+    request: ExtendedInstrumentsSyncRequest | None = None,
+) -> SyncResponse:
+    settings = get_settings()
+    client = ApiClient(settings)
+    with session_scope() as session:
+        return ExtendedInstrumentService(settings, client, session).sync(
+            request or ExtendedInstrumentsSyncRequest()
+        )
 
 
 def run_session_quotes_sync(request: SessionQuotesSyncRequest | None = None) -> SyncResponse:

@@ -20,7 +20,7 @@ dependencies = [
     "pandas>=2.2,<3",
     "SQLAlchemy>=2.0,<3",
     "psycopg2-binary>=2.9,<3",
-    "finance-schema>=0.1.2,<0.2",
+    "finance-schema>=0.1.3,<0.2",
 ]
 
 [project.optional-dependencies]

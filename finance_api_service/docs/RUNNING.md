@@ -17,7 +17,7 @@ cp .env.example .env
 `environment.yml` cai package service editable va `finance-schema` tu GitHub:
 
 ```text
-finance-schema @ git+https://github.com/Khangkhang92/schema_lib.git@main
+finance-schema @ git+https://github.com/Khangkhang92/schema_lib.git@v0.1.3
 -e .
 ```
 
@@ -245,9 +245,64 @@ Goi job:
 curl -X POST http://localhost:8000/fireant_data/webhooks/session-quotes/sync
 ```
 
-## 11. Sync history prices
+## 11. Sync fundamentals
 
 Endpoint nay khong can body. Service se:
+
+- lay ticker tu DB theo thu tu alphabet
+- goi `/symbols/{symbol}/fundamental`
+- ghi snapshot theo ngay vao bang `market`
+- cap nhat cac cot LCDT can: `shares`, `shares_out_standing`, `market_cap`,
+  `market_capitalization`, `free_shares`
+
+Goi job:
+
+```bash
+curl -X POST http://localhost:8000/fireant_data/webhooks/fundamentals/sync
+```
+
+Co the chot ngay snapshot:
+
+```bash
+curl -X POST http://localhost:8000/fireant_data/webhooks/fundamentals/sync \
+  -H 'Content-Type: application/json' \
+  -d '{"target_date":"2026-05-07"}'
+```
+
+## 12. Sync extended instruments
+
+Endpoint nay khong can body. Service se:
+
+- search futures qua `/symbols/search`, mac dinh keyword `VN30F`
+- search covered warrants qua `/symbols/search`, mac dinh keyword `C`
+- lay `/symbols/{symbol}/warrant-info` cho warrant da tim thay
+- lay detail ETF/fund symbols qua `/symbols/{symbol}`
+- lay MXV commodity contracts qua `/mxv/market/contracts`
+
+Ghi vao cac bang:
+
+- `symbol`: `instrument_type`, `instrument_code`, `is_listing`
+- `derivative_contract`
+- `covered_warrant_info`
+- `commodity_contract`
+
+Goi job:
+
+```bash
+curl -X POST http://localhost:8000/fireant_data/webhooks/extended-instruments/sync
+```
+
+Body tuy chon:
+
+```bash
+curl -X POST http://localhost:8000/fireant_data/webhooks/extended-instruments/sync \
+  -H 'Content-Type: application/json' \
+  -d '{"futures_keywords":["VN30F"],"warrant_keywords":["C"],"mxv_limit":500}'
+```
+
+## 13. Sync history prices
+
+Endpoint nay co the khong can body. Service se:
 
 - lay ticker tu DB theo thu tu alphabet
 - mac dinh lay du lieu 1 nam tro lai day
@@ -260,10 +315,13 @@ Goi job:
 curl -X POST http://localhost:8000/fireant_data/webhooks/history-prices/sync
 ```
 
-## 12. Lich Celery mac dinh
+## 14. Lich Celery mac dinh
 
 - `symbols`: 06:00, ngay 02 cua cac thang `01, 04, 07, 10`
+- `industries`: 06:15, ngay 02 cua cac thang `01, 04, 07, 10`
 - `company-details`: 06:30, ngay 03 cua cac thang `01, 04, 07, 10`
+- `fundamentals`: 07:30
+- `extended-instruments`: 07:45
 - `market-mentions`: 08:00
 - `session-quotes`: 16:15
 - `history-prices`: 17:00

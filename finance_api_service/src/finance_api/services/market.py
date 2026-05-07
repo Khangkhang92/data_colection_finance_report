@@ -6,6 +6,7 @@ from finance_api.clients import ApiClient
 from finance_api.config import Settings
 from finance_api.repositories.market import MarketRepository
 from finance_api.schemas import (
+    FundamentalsSyncRequest,
     HistoryPricesSyncRequest,
     MarketMentionsSyncRequest,
     SessionQuotesSyncRequest,
@@ -88,6 +89,62 @@ class MarketService:
             errors=errors,
         )
 
+    def sync_fundamentals(self, request: FundamentalsSyncRequest | None = None) -> SyncResponse:
+        request = request or FundamentalsSyncRequest()
+        fetched = 0
+        saved = 0
+        errors: list[str] = []
+        symbols = get_symbols(self.session)
+        target_date = request.target_date or date.today()
+        logger.info(
+            "Fundamentals sync started symbols={symbols} target_date={target_date}",
+            symbols=len(symbols),
+            target_date=target_date,
+        )
+
+        for symbol in symbols:
+            try:
+                raw = self.client.get_json(
+                    self.settings.symbol_fundamental_url.format(symbol=symbol),
+                    include_auth=request.include_auth,
+                )
+            except Exception as exc:
+                self.session.rollback()
+                errors.append(f"{symbol}: {exc}")
+                logger.exception("Fundamentals sync failed symbol={symbol}", symbol=symbol)
+                continue
+
+            if not isinstance(raw, dict):
+                errors.append(f"{symbol}: unexpected response type {type(raw).__name__}")
+                logger.warning(
+                    "Fundamentals sync skipped symbol={symbol} reason=unexpected_response_type type={type}",
+                    symbol=symbol,
+                    type=type(raw).__name__,
+                )
+                continue
+
+            self.repository.upsert_fundamental_snapshot(symbol, raw, target_date)
+            self.session.commit()
+            fetched += 1
+            saved += 1
+            logger.info("Fundamentals synced symbol={symbol}", symbol=symbol)
+
+        logger.info(
+            "Fundamentals sync finished status={status} fetched={fetched} saved={saved} errors={errors}",
+            status="ok" if not errors else "partial_error",
+            fetched=fetched,
+            saved=saved,
+            errors=len(errors),
+        )
+        return SyncResponse(
+            service="fundamentals",
+            status="ok" if not errors else "partial_error",
+            fetched=fetched,
+            saved=saved,
+            errors=errors,
+            meta={"symbols": len(symbols), "target_date": target_date.isoformat()},
+        )
+
     def sync_session_quotes(self, request: SessionQuotesSyncRequest) -> SyncResponse:
         fetched = 0
         saved = 0
@@ -166,7 +223,7 @@ class MarketService:
                 continue
             try:
                 rows = self.client.get_json(
-                    f"{self.settings.subsidiaries_url}/{symbol}/historical-quotes",
+                    self.settings.symbol_historical_quotes_url.format(symbol=symbol),
                     params={
                         "startDate": start_date.isoformat(),
                         "endDate": end_date.isoformat(),

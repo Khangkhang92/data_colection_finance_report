@@ -142,7 +142,7 @@ before starting FastAPI.
 
 `company_detail.py` -> `services/company.py` + `repositories/company.py` + `POST /fireant_data/webhooks/company-details/sync`
 
-`market_mention.py`, `session_quote.py`, `history_price.py` -> `services/market.py` + `repositories/market.py`
+`market_mention.py`, `session_quote.py`, `history_price.py`, `symbol_fundamental.py` -> `services/market.py` + `repositories/market.py`
 
 `getdata/base.py` -> `clients/fireant.py`
 
@@ -150,8 +150,8 @@ before starting FastAPI.
 
 ## Operational Notes
 
-`finance-statements`, `session-quotes`, and `history-prices` commit by batch so
-long sync jobs do not lose all progress if interrupted.
+`finance-statements`, `fundamentals`, `session-quotes`, and `history-prices`
+commit by batch so long sync jobs do not lose all progress if interrupted.
 
 `finance-statements` defaults to a long backfill window of `120` quarterly
 periods plus `30` annual periods (`quarter=0`) so the first run loads the
@@ -160,6 +160,10 @@ coverage checks and only fetch missing batches.
 
 `history-prices` stores raw prices plus `adj_ratio`. Adjusted prices are
 derived data and should be computed from raw data when needed.
+
+`fundamentals` stores FireAnt `/symbols/{symbol}/fundamental` as a daily market
+snapshot in `market`, especially `free_shares`, `shares_out_standing`, and
+`market_cap`. LCDT uses these fields for free-float/size weighting.
 
 `symbols` are loaded from DB in alphabetical order for downstream sync jobs.
 

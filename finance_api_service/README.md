@@ -54,9 +54,12 @@ http://localhost:8000/docs
 ```bash
 POST /fireant_data/webhooks/posts/sync
 POST /fireant_data/webhooks/symbols/sync
+POST /fireant_data/webhooks/industries/sync
 POST /fireant_data/webhooks/finance-statements/sync
 POST /fireant_data/webhooks/company-details/sync
 POST /fireant_data/webhooks/market-mentions/sync
+POST /fireant_data/webhooks/fundamentals/sync
+POST /fireant_data/webhooks/extended-instruments/sync
 POST /fireant_data/webhooks/session-quotes/sync
 POST /fireant_data/webhooks/history-prices/sync
 ```
@@ -79,7 +82,10 @@ Compose dev stack da co san:
 Lich mac dinh hien tai:
 
 - `symbols`: 06:00, ngay 02 cua cac thang `01, 04, 07, 10`
+- `industries`: 06:15, ngay 02 cua cac thang `01, 04, 07, 10`
 - `company-details`: 06:30, ngay 03 cua cac thang `01, 04, 07, 10`
+- `fundamentals`: 07:30
+- `extended-instruments`: 07:45
 - `market-mentions`: 08:00
 - `session-quotes`: 16:15
 - `history-prices`: 17:00
@@ -108,10 +114,21 @@ Flower mac dinh mo tai `http://localhost:5555`.
   `symbol + report_type`, va resume khi goi lai.
 - `market-mentions/sync`: khong can body, mac dinh lay du `today`, `weekly`,
   `monthly`.
+- `industries/sync`: mac dinh `include_symbols=true`, cap nhat bang `industry`
+  va mapping `symbol.industry_code`, `symbol.icb_code`.
+- `fundamentals/sync`: khong can body, lay `/symbols/{symbol}/fundamental` cho
+  toan bo ticker trong DB, ghi snapshot theo ngay vao bang `market` cac cot
+  `shares`, `shares_out_standing`, `market_cap`, `market_capitalization`,
+  `free_shares`. Day la du lieu can cho LCDT de tinh ty trong von hoa/free-float.
+- `extended-instruments/sync`: lay futures/warrant/fund detail va MXV contracts.
+  Job nay cap nhat `symbol.instrument_type`, `symbol.instrument_code`,
+  `symbol.is_listing`, `derivative_contract`, `covered_warrant_info`,
+  `commodity_contract`.
 - `session-quotes/sync`: khong can body, lay toan bo ticker trong DB, commit theo
   tung `symbol`.
 - `history-prices/sync`: khong can body, mac dinh lay 1 nam tro lai day; neu DB
   da co du lieu cho mot ma thi tiep tuc tu `latest_date` cua ma do den hien tai.
+  Endpoint nay nhan body tuy chon `{ "limit": 100 }`.
 
 ## Tai lieu
 

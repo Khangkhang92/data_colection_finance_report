@@ -6,7 +6,9 @@ from celery.schedules import crontab
 from finance_api.config import get_settings
 from finance_api.jobs import (
     run_company_details_sync,
+    run_extended_instruments_sync,
     run_finance_statements_sync,
+    run_fundamentals_sync,
     run_history_prices_sync,
     run_industries_sync,
     run_market_mentions_sync,
@@ -16,6 +18,8 @@ from finance_api.jobs import (
 )
 from finance_api.schemas.requests import (
     CompanyDetailsSyncRequest,
+    ExtendedInstrumentsSyncRequest,
+    FundamentalsSyncRequest,
     HistoryPricesSyncRequest,
     IndustriesSyncRequest,
     MarketMentionsSyncRequest,
@@ -59,6 +63,17 @@ celery_app.conf.update(
         "sync-company-details-quarterly": {
             "task": "finance_api.sync_company_details",
             "schedule": crontab(month_of_year="1,4,7,10", day_of_month=3, hour=6, minute=30),
+        },
+        # Snapshot free-float, shares outstanding va market cap cho LCDT.
+        # Chay truoc history/session quote de co du bien quy mo trong bang market.
+        "sync-fundamentals-daily": {
+            "task": "finance_api.sync_fundamentals",
+            "schedule": crontab(hour=7, minute=30),
+        },
+        # Metadata futures, covered warrants, ETF details va MXV commodity contracts.
+        "sync-extended-instruments-daily": {
+            "task": "finance_api.sync_extended_instruments",
+            "schedule": crontab(hour=7, minute=45),
         },
         # Market mentions la du lieu co tinh chat gan real-time hon,
         # nhung job nay hien duoc chot 1 lan vao buoi sang de lay snapshot.
@@ -125,6 +140,18 @@ def sync_company_details_task(payload: dict | None = None) -> dict:
 def sync_market_mentions_task(payload: dict | None = None) -> dict:
     request = MarketMentionsSyncRequest(**(payload or {}))
     return run_market_mentions_sync(request).model_dump(mode="json")
+
+
+@celery_app.task(name="finance_api.sync_fundamentals")
+def sync_fundamentals_task(payload: dict | None = None) -> dict:
+    request = FundamentalsSyncRequest(**(payload or {}))
+    return run_fundamentals_sync(request).model_dump(mode="json")
+
+
+@celery_app.task(name="finance_api.sync_extended_instruments")
+def sync_extended_instruments_task(payload: dict | None = None) -> dict:
+    request = ExtendedInstrumentsSyncRequest(**(payload or {}))
+    return run_extended_instruments_sync(request).model_dump(mode="json")
 
 
 @celery_app.task(name="finance_api.sync_session_quotes")

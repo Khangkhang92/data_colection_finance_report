@@ -37,6 +37,30 @@ class Settings(BaseSettings):
         default="https://api.fireant.vn/symbols/{symbol}",
         alias="SYMBOL_DETAIL_URL",
     )
+    symbol_fundamental_url: str = Field(
+        default="https://api.fireant.vn/symbols/{symbol}/fundamental",
+        alias="SYMBOL_FUNDAMENTAL_URL",
+    )
+    symbol_historical_quotes_url: str = Field(
+        default="https://api.fireant.vn/symbols/{symbol}/historical-quotes",
+        alias="SYMBOL_HISTORICAL_QUOTES_URL",
+    )
+    symbol_search_url: str = Field(
+        default="https://api.fireant.vn/symbols/search",
+        alias="SYMBOL_SEARCH_URL",
+    )
+    symbol_movers_url: str = Field(
+        default="https://api.fireant.vn/symbols/movers",
+        alias="SYMBOL_MOVERS_URL",
+    )
+    symbol_warrant_info_url: str = Field(
+        default="https://api.fireant.vn/symbols/{symbol}/warrant-info",
+        alias="SYMBOL_WARRANT_INFO_URL",
+    )
+    mxv_contracts_url: str = Field(
+        default="https://api.fireant.vn/mxv/market/contracts",
+        alias="MXV_CONTRACTS_URL",
+    )
     industries_url: str = Field(default="https://api.fireant.vn/industries", alias="INDUSTRIES_URL")
     industry_symbols_url: str = Field(
         default="https://api.fireant.vn/icb/{industry_code}/symbols",

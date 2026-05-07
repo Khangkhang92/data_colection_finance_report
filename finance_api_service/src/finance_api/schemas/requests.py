@@ -121,3 +121,38 @@ class SessionQuotesSyncRequest(BaseModel):
 
 class HistoryPricesSyncRequest(BaseModel):
     limit: int = 100
+
+
+class FundamentalsSyncRequest(BaseModel):
+    target_date: date | None = None
+    include_auth: bool = True
+
+
+class ExtendedInstrumentsSyncRequest(BaseModel):
+    include_auth: bool = True
+    include_futures: bool = True
+    include_warrants: bool = True
+    include_etf_details: bool = True
+    include_mxv_contracts: bool = True
+    futures_keywords: list[str] = Field(default_factory=lambda: ["VN30F"])
+    warrant_keywords: list[str] = Field(default_factory=lambda: ["C"])
+    etf_symbols: list[str] = Field(
+        default_factory=lambda: ["E1VFVN30", "FUEVFVND", "FUESSVFL", "FUEMAV30", "FUEKIV30"]
+    )
+    search_limit: int = 200
+    mxv_limit: int = 500
+
+    @field_validator("futures_keywords", "warrant_keywords", "etf_symbols", mode="before")
+    @classmethod
+    def normalize_string_list(cls, value: Any) -> list[str]:
+        if value is None:
+            return []
+        if isinstance(value, str):
+            value = [value]
+        if not isinstance(value, list):
+            return []
+        return [
+            str(item).strip().upper()
+            for item in value
+            if item is not None and str(item).strip() and str(item).strip().lower() != "string"
+        ]

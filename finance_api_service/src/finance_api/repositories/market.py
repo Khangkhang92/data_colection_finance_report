@@ -7,7 +7,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from finance_api.utils.dates import parse_date, parse_datetime
-from finance_schema.models import HistoryPrice, MarketMention, SessionQuote
+from finance_schema.models import HistoryPrice, Market, MarketMention, SessionQuote
 
 
 class MarketRepository:
@@ -49,6 +49,23 @@ class MarketRepository:
         stmt = stmt.on_conflict_do_update(
             index_elements=["symbol_ticker", "datetime"],
             set_={key: row.get(key) for key in row if key not in {"symbol_ticker", "datetime"}},
+        )
+        self.session.execute(stmt)
+
+    def upsert_fundamental_snapshot(self, symbol: str, raw: dict, target_date: date) -> None:
+        row = {
+            "symbol_ticker": (raw.get("symbol") or symbol).upper(),
+            "date": target_date,
+            "shares": raw.get("shares"),
+            "shares_out_standing": raw.get("sharesOutstanding"),
+            "market_cap": raw.get("marketCap"),
+            "market_capitalization": raw.get("marketCapitalization") or raw.get("marketCap"),
+            "free_shares": raw.get("freeShares"),
+        }
+        stmt = insert(Market).values(**row)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["symbol_ticker", "date"],
+            set_={key: row.get(key) for key in row if key not in {"symbol_ticker", "date"}},
         )
         self.session.execute(stmt)
 

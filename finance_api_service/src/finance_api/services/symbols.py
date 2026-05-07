@@ -138,13 +138,18 @@ class SymbolService:
 
     def _symbol_row(self, raw: dict[str, Any]) -> dict[str, Any] | None:
         ticker = raw.get("symbol") or raw.get("instrument")
-        exchange = raw.get("exchange")
-        if not ticker or not exchange:
+        exchange = raw.get("exchange") or "UNKNOWN"
+        if not ticker:
             return None
         return {
             "ticker": str(ticker).upper(),
             "exchange": exchange,
             "company_name": raw.get("name"),
+            "instrument_type": raw.get("type") or raw.get("instrumentType"),
+            "instrument_code": raw.get("instrument"),
+            "is_listing": raw.get("isListing")
+            if raw.get("isListing") is not None
+            else raw.get("is_listing"),
             "industry_code": raw.get("industryCode") or raw.get("industry_code"),
             "icb_code": raw.get("icbCode") or raw.get("icb_code"),
             "industry": raw.get("industry"),
