@@ -6,7 +6,7 @@ from finance_api.clients import ApiClient
 from finance_api.config import Settings
 from finance_api.repositories.symbols import SymbolRepository
 from finance_api.schemas import SymbolsSyncRequest, SyncResponse
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from finance_schema.models import Symbol
@@ -54,7 +54,9 @@ def is_financial_report_symbol(ticker: str, company_name: str | None) -> bool:
 
 def get_financial_report_symbols(session: Session) -> list[str]:
     rows = session.execute(
-        select(Symbol.ticker, Symbol.company_name).order_by(Symbol.ticker.asc())
+        select(Symbol.ticker, Symbol.company_name, Symbol.instrument_type)
+        .where(func.lower(Symbol.instrument_type) == "stock")
+        .order_by(Symbol.ticker.asc())
     ).all()
     symbols = [
         row.ticker

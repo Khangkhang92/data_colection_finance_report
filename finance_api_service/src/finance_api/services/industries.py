@@ -24,8 +24,10 @@ class IndustryService:
             self.settings.industries_url,
             include_auth=request.include_auth,
         )
+        raw_industry_rows = self._extract_rows(raw_industries)
+        industry_code_by_id = self._industry_code_by_id(raw_industry_rows)
         industry_rows = [
-            row for row in (self._industry_row(raw) for raw in self._extract_rows(raw_industries))
+            row for row in (self._industry_row(raw, industry_code_by_id) for raw in raw_industry_rows)
             if row is not None
         ]
         fetched_industries = len(industry_rows)
@@ -274,21 +276,56 @@ class IndustryService:
                     return self._extract_symbol_rows(value)
         return []
 
-    def _industry_row(self, raw: dict[str, Any]) -> dict[str, Any] | None:
+    def _industry_code_by_id(self, rows: list[dict[str, Any]]) -> dict[int, str]:
+        industry_code_by_id: dict[int, str] = {}
+        for raw in rows:
+            raw_id = self._coerce_int(raw.get("id") or raw.get("industryId") or raw.get("industryID"))
+            industry_code = raw.get("industryCode") or raw.get("industry_code")
+            if isinstance(raw_id, int) and industry_code:
+                industry_code_by_id[raw_id] = str(industry_code)
+        return industry_code_by_id
+
+    def _industry_row(
+        self,
+        raw: dict[str, Any],
+        industry_code_by_id: dict[int, str],
+    ) -> dict[str, Any] | None:
         industry_code = raw.get("industryCode") or raw.get("industry_code")
         if not industry_code:
             return None
+        parent_industry_code = (
+            raw.get("parentIndustryCode")
+            or raw.get("parent_industry_code")
+            or raw.get("parentCode")
+        )
+        if parent_industry_code is None:
+            parent_id = self._coerce_int(
+                raw.get("parentId") or raw.get("parentID") or raw.get("industryParentId")
+            )
+            if isinstance(parent_id, int):
+                parent_industry_code = industry_code_by_id.get(parent_id)
         return {
             "industry_code": str(industry_code),
             "parent_industry_code": (
-                raw.get("parentIndustryCode")
-                or raw.get("parent_industry_code")
-                or raw.get("parentCode")
+                str(parent_industry_code) if parent_industry_code is not None else None
             ),
             "level": raw.get("level"),
             "name": raw.get("name"),
             "description": raw.get("description"),
         }
+
+    def _coerce_int(self, value: Any) -> int | None:
+        if isinstance(value, int):
+            return value
+        if value is None:
+            return None
+        text = str(value).strip()
+        if not text:
+            return None
+        try:
+            return int(text)
+        except ValueError:
+            return None
 
     def _symbol_mapping_row(
         self,

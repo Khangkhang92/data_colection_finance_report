@@ -202,6 +202,25 @@ class MarketService:
         errors: list[str] = []
         symbols = get_symbols(self.session)
         default_end_date = date.today()
+        if default_end_date.weekday() >= 5:
+            logger.info(
+                "History prices sync skipped reason=weekend run_date={run_date}",
+                run_date=default_end_date,
+            )
+            return SyncResponse(
+                service="history_prices",
+                status="ok",
+                fetched=0,
+                saved=0,
+                errors=[],
+                meta={
+                    "symbols": len(symbols),
+                    "end_date": default_end_date.isoformat(),
+                    "limit": request.limit,
+                    "skipped": True,
+                    "skip_reason": "weekend",
+                },
+            )
         default_start_date = default_end_date - timedelta(days=365)
         logger.info(
             "History prices sync started symbols={symbols} "
