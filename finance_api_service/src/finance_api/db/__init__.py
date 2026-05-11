@@ -1,3 +1,0 @@
-from finance_api.db.session import get_session, session_scope
-
-__all__ = ["get_session", "session_scope"]

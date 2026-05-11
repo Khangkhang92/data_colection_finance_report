@@ -8,3 +8,4 @@ backup.sql
 logs/
 markets_data/
 logfile.log
+web/node_modules/
