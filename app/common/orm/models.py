@@ -215,6 +215,82 @@ class Data(Base):
     quarter: Mapped[int] = mapped_column(Integer, nullable=False)
 
 
+class NewPostsContent(Base):
+    __tablename__ = "new_posts_content"
+    __table_args__ = (
+        UniqueConstraint("menu_name", "fireant_post_id", name="uq_new_posts_content_menu_post"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    menu_name: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    fireant_post_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    user_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    user_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    title: Mapped[str | None] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    content: Mapped[str | None] = mapped_column(Text, nullable=True)
+    original_content: Mapped[str | None] = mapped_column(Text, nullable=True)
+    language: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    post_type: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    approved: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    is_expert_idea: Mapped[bool | None] = mapped_column(Boolean, nullable=True, index=True)
+    total_likes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    total_replies: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    total_shares: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    post_source_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    tagged_symbols: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
+    images: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    author: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    source_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    payload: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+
+
+class NewPostsContentPostGroup(Base):
+    __tablename__ = "new_posts_content_post_groups"
+    __table_args__ = (
+        UniqueConstraint(
+            "new_post_content_id",
+            "post_group_id",
+            name="uq_new_posts_content_post_group",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    new_post_content_id: Mapped[int] = mapped_column(
+        ForeignKey("new_posts_content.id"),
+        nullable=False,
+        index=True,
+    )
+    post_group_id: Mapped[int] = mapped_column(
+        ForeignKey("post_groups.post_group_id"),
+        nullable=False,
+        index=True,
+    )
+
+
+class DetailNewPost(Base):
+    __tablename__ = "detail_new_posts"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    new_post_content_id: Mapped[int] = mapped_column(
+        ForeignKey("new_posts_content.id"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    fireant_post_id: Mapped[int] = mapped_column(Integer, nullable=False, unique=True, index=True)
+    detail_content: Mapped[str | None] = mapped_column(Text, nullable=True)
+    detail_original_content: Mapped[str | None] = mapped_column(Text, nullable=True)
+    detail_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    detail_payload: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+
+
 class SyncOutbox(Base):
     __tablename__ = "sync_outbox"
 

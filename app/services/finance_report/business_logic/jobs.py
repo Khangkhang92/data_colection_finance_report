@@ -8,9 +8,11 @@ from uuid import uuid4
 
 from business_logic.clients import ApiClient
 from business_logic.services.company import CompanyService
+from business_logic.services.detail_new_posts import DetailNewPostsService
 from business_logic.services.finance_report import FinanceStatementService
 from business_logic.services.graph_sync import GraphSyncService
 from business_logic.services.market import MarketService
+from business_logic.services.new_posts_content import NewPostsContentService
 from business_logic.services.posts import PostsService
 from business_logic.services.symbols import SymbolService
 from common.clients.neo4j import connect_neo4j
@@ -123,6 +125,20 @@ def run_posts_sync(request) -> SyncResponse:
     client = ApiClient(settings)
     with session_scope() as session:
         return PostsService(settings, client, session).sync(request)
+
+
+def run_new_posts_content_sync(request) -> SyncResponse:
+    settings = get_settings()
+    client = ApiClient(settings)
+    with session_scope() as session:
+        return NewPostsContentService(settings, client, session).sync(request)
+
+
+def run_detail_new_posts_sync(request) -> SyncResponse:
+    settings = get_settings()
+    client = ApiClient(settings)
+    with session_scope() as session:
+        return DetailNewPostsService(settings, client, session).sync(request)
 
 
 def run_finance_statements_sync() -> SyncResponse:

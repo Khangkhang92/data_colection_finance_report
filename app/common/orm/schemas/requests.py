@@ -30,6 +30,21 @@ class PostsSyncRequest(BaseModel):
     params: dict[str, Any] = Field(default_factory=dict)
 
 
+class NewPostsContentSyncRequest(BaseModel):
+    total: int = 300
+    step: int = 30
+    menu_name: str = "expert-ideas"
+    url: str = "https://restv2.fireant.vn/posts/expert-ideas"
+    params: dict[str, Any] = Field(default_factory=dict)
+
+
+class DetailNewPostsSyncRequest(BaseModel):
+    limit: int = 100
+    menu_name: str | None = None
+    only_missing_detail: bool = True
+    detail_base_url: str = "https://api.fireant.vn/posts"
+
+
 class FinanceStatementsSyncRequest(BaseModel):
     report_types: list[FinancialReportType] = Field(
         default_factory=lambda: [

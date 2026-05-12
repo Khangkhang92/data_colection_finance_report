@@ -7,9 +7,11 @@ from common.config.finance_rag import get_settings as get_rag_settings
 from business_logic.jobs import (
     job_manager,
     run_company_details_sync,
+    run_detail_new_posts_sync,
     run_finance_statements_sync,
     run_history_prices_sync,
     run_market_mentions_sync,
+    run_new_posts_content_sync,
     run_posts_sync,
     run_session_quotes_sync,
     run_symbols_sync,
@@ -29,8 +31,10 @@ from rag.schemas import (
 from common.orm.db import session_scope
 from common.orm.schemas import (
     CompanyDetailsSyncRequest,
+    DetailNewPostsSyncRequest,
     JobAcceptedResponse,
     JobStatusResponse,
+    NewPostsContentSyncRequest,
     SessionQuotesSyncRequest,
     SymbolsSyncRequest,
     PostsSyncRequest,
@@ -56,6 +60,46 @@ def get_job(job_id: str) -> JobStatusResponse:
 def sync_posts(request: PostsSyncRequest, settings: Settings = Depends(get_settings)) -> JobAcceptedResponse:
     job, deduplicated = job_manager.enqueue("posts_sync", lambda: run_posts_sync(request), dedupe_key="posts_sync")
     return JobAcceptedResponse(job_id=job.job_id, job_name=job.job_name, status=job.status, deduplicated=deduplicated, message="Posts sync job accepted")
+
+
+@router.post("/webhooks/new-posts-content/sync", response_model=JobAcceptedResponse, status_code=status.HTTP_202_ACCEPTED)
+def sync_new_posts_content(
+    request: NewPostsContentSyncRequest = Body(default_factory=NewPostsContentSyncRequest),
+    settings: Settings = Depends(get_settings),
+) -> JobAcceptedResponse:
+    dedupe_key = f"new_posts_content_sync:{request.menu_name}"
+    job, deduplicated = job_manager.enqueue(
+        "new_posts_content_sync",
+        lambda: run_new_posts_content_sync(request),
+        dedupe_key=dedupe_key,
+    )
+    return JobAcceptedResponse(
+        job_id=job.job_id,
+        job_name=job.job_name,
+        status=job.status,
+        deduplicated=deduplicated,
+        message="New posts content sync job accepted",
+    )
+
+
+@router.post("/webhooks/new-posts-content/details/sync", response_model=JobAcceptedResponse, status_code=status.HTTP_202_ACCEPTED)
+def sync_detail_new_posts_content(
+    request: DetailNewPostsSyncRequest = Body(default_factory=DetailNewPostsSyncRequest),
+    settings: Settings = Depends(get_settings),
+) -> JobAcceptedResponse:
+    dedupe_key = f"detail_new_posts_sync:{request.menu_name or 'all'}"
+    job, deduplicated = job_manager.enqueue(
+        "detail_new_posts_sync",
+        lambda: run_detail_new_posts_sync(request),
+        dedupe_key=dedupe_key,
+    )
+    return JobAcceptedResponse(
+        job_id=job.job_id,
+        job_name=job.job_name,
+        status=job.status,
+        deduplicated=deduplicated,
+        message="Detail new posts sync job accepted",
+    )
 
 
 @router.post("/webhooks/finance-statements/sync", response_model=JobAcceptedResponse, status_code=status.HTTP_202_ACCEPTED)

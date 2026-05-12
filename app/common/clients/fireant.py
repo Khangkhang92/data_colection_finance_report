@@ -17,7 +17,7 @@ class ApiClient:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
 
-    def _headers(self, include_auth: bool = True) -> dict[str, str]:
+    def _headers(self, url: str, include_auth: bool = True) -> dict[str, str]:
         headers = {
             "Accept": "application/json, text/plain, */*",
             "Accept-Language": "en-US,en;q=0.5",
@@ -25,9 +25,18 @@ class ApiClient:
             "Referer": "https://fireant.vn/",
             "User-Agent": "finance-api-service/0.1.0",
         }
-        if include_auth and self.settings.token_rest2:
-            headers["Authorization"] = f"Bearer {self.settings.token_rest2}"
+        token = self._resolve_token(url)
+        if include_auth and token:
+            headers["Authorization"] = f"Bearer {token}"
         return headers
+
+    def _resolve_token(self, url: str) -> str | None:
+        endpoint = (url or "")
+        if "restv2.fireant.vn/posts/expert-ideas" in endpoint:
+            return self.settings.fire_ant_anoymous_token or self.settings.token or self.settings.token_rest2
+        if "api.fireant.vn/posts/" in endpoint:
+            return self.settings.fire_ant_anoymous_token or self.settings.token or self.settings.token_rest2
+        return self.settings.token or self.settings.token_rest2
 
     def get_json(
         self,
@@ -49,7 +58,7 @@ class ApiClient:
                     attempts=attempts,
                 )
                 with httpx.Client(timeout=self.settings.http_timeout_seconds) as client:
-                    response = client.get(url, params=params, headers=self._headers(include_auth))
+                    response = client.get(url, params=params, headers=self._headers(url, include_auth))
                     response.raise_for_status()
                     logger.info(
                         "API GET finished url={url} status={status}",

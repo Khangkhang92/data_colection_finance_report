@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     token_rest2: str | None = Field(default=None, alias="TOKEN_REST2")
+    token: str | None = Field(default=None, alias="TOKEN")
+    fire_ant_anoymous_token: str | None = Field(default=None, alias="FIRE_ANT_ANOYMOUS_TOKEN")
     http_timeout_seconds: float = 30
     http_max_retries: int = 2
     http_retry_delay_seconds: float = 2
