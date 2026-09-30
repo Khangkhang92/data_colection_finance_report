@@ -3,7 +3,7 @@ from __future__ import annotations
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from finance_schema.models import Symbol
+from finance_schema.core import Symbol
 
 
 class SymbolRepository:
