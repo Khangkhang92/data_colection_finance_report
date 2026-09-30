@@ -7,7 +7,7 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 ARG FINANCE_SCHEMA_REPO=ssh://git@github.com/Khangkhang92/schema_lib.git
-ARG FINANCE_SCHEMA_REF=main
+ARG FINANCE_SCHEMA_REF=dev
 
 COPY . /app
 
