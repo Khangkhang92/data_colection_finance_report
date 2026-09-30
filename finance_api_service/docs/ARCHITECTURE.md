@@ -55,3 +55,29 @@ Celery Beat la scheduler mac dinh cho cac dong bo dinh ky. Redis giu queue va ke
 
 Moi sync job deu co HTTP endpoint rieng de trigger thu cong, quan sat, hoac noi
 vao he thong orchestration ben ngoai khi can.
+
+
+## Shared symbol universe
+
+`symbols/sync` has an additional platform responsibility: populate the canonical stock universe in `finance_schema.core.Symbol`.
+
+```text
+FireAnt API
+  ↓
+symbols sync
+  ↓
+core.symbol
+  ↓
+shared PostgreSQL
+  ↓
+OCR_data_pipeline reads/selects ticker
+```
+
+Important boundary:
+
+- syncing a symbol does **not** trigger OCR;
+- this service does not choose which Vietstock documents should be processed;
+- OCR_data_pipeline validates user-selected tickers against `core.symbol`;
+- document/category/year/revision selection belongs to OCR_data_pipeline.
+
+The two services therefore share identity, not workflow ownership.
