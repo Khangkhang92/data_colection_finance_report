@@ -39,7 +39,7 @@ services:
         - default
       args:
         FINANCE_SCHEMA_REPO: ${FINANCE_SCHEMA_REPO:-ssh://git@github.com/Khangkhang92/schema_lib.git}
-        FINANCE_SCHEMA_REF: ${FINANCE_SCHEMA_REF:-main}
+        FINANCE_SCHEMA_REF: ${FINANCE_SCHEMA_REF:-dev}
     container_name: fireant-api
     restart: unless-stopped
     env_file:
@@ -65,7 +65,7 @@ services:
         - default
       args:
         FINANCE_SCHEMA_REPO: ${FINANCE_SCHEMA_REPO:-ssh://git@github.com/Khangkhang92/schema_lib.git}
-        FINANCE_SCHEMA_REF: ${FINANCE_SCHEMA_REF:-main}
+        FINANCE_SCHEMA_REF: ${FINANCE_SCHEMA_REF:-dev}
     container_name: fireant-celery-worker
     restart: unless-stopped
     env_file:
@@ -91,7 +91,7 @@ services:
         - default
       args:
         FINANCE_SCHEMA_REPO: ${FINANCE_SCHEMA_REPO:-ssh://git@github.com/Khangkhang92/schema_lib.git}
-        FINANCE_SCHEMA_REF: ${FINANCE_SCHEMA_REF:-main}
+        FINANCE_SCHEMA_REF: ${FINANCE_SCHEMA_REF:-dev}
     container_name: fireant-celery-beat
     restart: unless-stopped
     env_file:
@@ -124,7 +124,7 @@ services:
         - default
       args:
         FINANCE_SCHEMA_REPO: ${FINANCE_SCHEMA_REPO:-ssh://git@github.com/Khangkhang92/schema_lib.git}
-        FINANCE_SCHEMA_REF: ${FINANCE_SCHEMA_REF:-main}
+        FINANCE_SCHEMA_REF: ${FINANCE_SCHEMA_REF:-dev}
     container_name: fireant-flower
     restart: unless-stopped
     env_file:
