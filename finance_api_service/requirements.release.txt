@@ -1,4 +1,4 @@
-# Production/release install pulls finance-schema directly from GitHub.
+# Development branch targets finance-schema 0.2 on schema_lib/dev. Pin v0.2.x before production release.
 fastapi>=0.115,<1
 uvicorn[standard]>=0.30,<1
 celery[redis]>=5.4,<6
@@ -11,4 +11,4 @@ loguru>=0.7,<1
 pandas>=2.2,<3
 SQLAlchemy>=2.0,<3
 psycopg2-binary>=2.9,<3
-finance-schema @ git+https://github.com/Khangkhang92/schema_lib.git@v0.1.3
+finance-schema @ git+https://github.com/Khangkhang92/schema_lib.git@dev
