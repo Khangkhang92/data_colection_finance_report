@@ -138,3 +138,20 @@ Flower mac dinh mo tai `http://localhost:5555`.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - [docs/DOCKER.md](docs/DOCKER.md)
 - [docs/MIGRATION_PLAN.md](docs/MIGRATION_PLAN.md)
+
+
+## Shared ticker universe
+
+`POST /fireant_data/webhooks/symbols/sync` synchronizes the stock universe into shared `finance_schema.core.Symbol`.
+
+This table is also consumed by `OCR_data_pipeline`:
+
+```text
+FireAnt symbols
+   ↓
+core.symbol
+   ↓
+user chooses ticker in OCR_data_pipeline
+```
+
+There is deliberately no automatic OCR trigger after a symbol sync. OCR selection remains explicit and can be based on ticker, Vietstock document type/year, or an exact source revision.
