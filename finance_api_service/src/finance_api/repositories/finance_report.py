@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from finance_schema.models import Data, Report
+from finance_schema.finance import Data, Report
 
 DISPLAY_NAME: dict[str, str] = {}
 
