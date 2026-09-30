@@ -4,7 +4,7 @@ from sqlalchemy import update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from finance_schema.models import Industry, Symbol
+from finance_schema.core import Industry, Symbol
 
 
 class IndustryRepository:
